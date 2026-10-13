@@ -1,6 +1,6 @@
 # Säkerhetsrapport – Team 3 Blue Team
 
-**Datum:** 2026-10-12 · **Version:** 1.2 · **Status:** Slutversion för inlämning
+**Datum:** 2026-10-13 · **Version:** 2.0 · **Status:** Slutversion för examination
 
 **Omfattning:** Blue Team-arbetet under vecka 4–7: GCP-infrastruktur, åtkomst, Headscale, Kubernetes, CI/CD och övervakning. Applikationssäkerhet ingår där den påverkar driften.
 
@@ -17,6 +17,14 @@ Den tydligaste kvarvarande driftrisken är att Headscales data ligger på jumpho
 Kvarvarande huvudrisker är Headscales beständighet, breda infra-CI- och app-deploybehörigheter samt avsaknad av Kubernetes NetworkPolicy. Infra-skanningen gjordes blockerande i PR #62. Det planerade bytet av GitHub-organisation och GCP-projekt är också en förändringsrisk som kräver backup, ägarskapskontroll och ny verifiering. Rapporten visar förbättringsbehov, inte att någon angripare har utnyttjat dem.
 
 **Viktig rättelse:** Infra-repots `main` har aktiva GitHub-rulesets med två obligatoriska granskningar och kontrollen `Format & Validate`. En tidigare kontroll av enbart äldre branch protection gav en felaktig bild. PR #62 mergades den 8 oktober och dess root-Terraform deployment lyckades.
+
+### Bedömningsspårbarhet
+
+| Kursmål | Var målet styrks |
+|---|---|
+| Mål 7 – sammanhängande säkerhetsarkitektur | Avsnitt 3–8 visar sambandet mellan nätverk, identitet, CI/CD, containerskydd, övervakning och incidentrespons. Avsnitt 5 visar kvarstående risk och avvägningar. |
+| Mål 8 – agilt säkerhetsprojekt | Avsnitt 10 beskriver backlog, prioritering, arbetsflöde, kvalitetssäkring och retrospektiva förbättringar. Issues, PR:er och commits utgör spårbar evidens. |
+| Mål 11 – AI i arbetsflödet | Avsnitt 11 beskriver användningsområden, begränsningar, mänskliga beslut och teknisk verifiering. Den individuella AI-redogörelsen lämnas dessutom separat. |
 
 ## 2. Metod och avgränsningar
 
@@ -125,6 +133,14 @@ Bedömningarna är kvalitativa och relativa till labbmiljön, inte CVSS-poäng.
 
 **Restrisk:** installationsskriptet hämtas fortfarande vid körning, fast från en versionstagg. Högre assurance kräver checksummeverifierad binär eller en egen förbyggd scannerimage. CycloneDX-SBOM skapas av Anchore och Trivy loggar därför en varning om tredjeparts-SBOM. Ett grönt resultat betyder att den aktuella konfigurationen inte hittade High/Critical-fynd; det bevisar inte att imagen saknar alla sårbarheter.
 
+### B07 – State-bucketens aktiva skydd kan inte verifieras av teamet
+
+**Prioritet: Hög inför miljöbytet.** Bootstrap-koden innehåller public access prevention, uniform bucket access, versionering, access-loggning och explicit IAM. Vid kontroll nekades teamkontot däremot både `storage.buckets.get` och `storage.buckets.getIamPolicy` på state-bucketen. Endast projektadministratör kan därför bekräfta eller applicera skydden. Issue #12 är korrekt fortsatt öppen.
+
+**Konsekvens:** teamet kan inte självständigt visa att kod och aktiv bucket överensstämmer eller granska vilka som kan läsa historiska state-versioner.
+
+**Åtgärd och klart-kriterium:** ny GCP-administratör granskar en bootstrap-plan, applicerar den i rätt projekt och verifierar public access prevention, loggleverans, lifecycle och IAM. Terraform-state ska säkerhetskopieras och migreras kontrollerat innan den gamla miljön tas bort.
+
 ## 6. Incidenter och lärdomar
 
 ### Paketvis bedömning av 43 High-träffar, 10–12 oktober
@@ -185,6 +201,17 @@ Lärdom: live-konfiguration som inte finns i Git/Terraform riskerar att förlora
 
 OS Login `CheckPolicy` visar en behörighetskontroll, inte ensamt en lyckad interaktiv SSH-session. Korrelatera med serverloggar. Scannerjobben kan följas med `kubectl get jobs` och `kubectl logs`; Discord är larmkanal, inte ensam evidenslagring. Verifiera retention, åtkomst och vem som hanterar larmen. Spara inte tokens eller kompletta credentials i loggar.
 
+### Incidentflöde
+
+1. **Upptäck:** Discord, GitHub Actions, GCP Audit Logs eller tjänstehälsa signalerar avvikelsen.
+2. **Triagera:** koppla händelsen till användare, commit, image-digest, pod och tidsstämpel; bevara relevanta loggar utan hemligheter.
+3. **Begränsa:** stoppa berörd deployment eller återkalla den minsta berörda identiteten. Behåll separat reservåtkomst så att teamet inte låses ute.
+4. **Åtgärda:** patcha i branch, granska via PR och bygg en ny signerad image. Ändra eller rotera credentials om exponering misstänks.
+5. **Återställ:** deploya godkänd artefakt och verifiera health checks, databas, åtkomst och larmväg.
+6. **Lär:** dokumentera rotorsak, evidens, kvarstående risk och förbättring som issue/retrospektiv.
+
+Flödet testades delvis genom rött leveranstest, scannerlarm, återställning av deployment och flera kontrollerade konfigurationsändringar. En fullständig tabletop-övning med roller, eskalering och återställning återstår.
+
 ## 8. MITRE ATT&CK och Threat Intelligence
 
 Mappningen nedan beskriver möjliga angreppssätt, inte observerade attacker mot teamet.
@@ -209,7 +236,61 @@ TLP styr delning, inte hur allvarlig en sårbarhet är. Rapporten klassas TLP:CL
 
 Råloggar, skärmbilder och bilagor ska granskas separat innan publicering. Lösenord, API-nycklar, privata nycklar och kubeconfig ska aldrig ingå, oavsett TLP-märkning. Rapporten innehåller inga sådana hemligheter.
 
-## 10. Föreslagen åtgärdsplan
+## 10. Projektgenomförande och agilt arbetssätt
+
+Arbetet bedrevs som ett lättviktigt Kanban-flöde i GitHub. Säkerhetsbehov dokumenterades som issues, avgränsades i branches och implementerades genom pull requests. Pipelinekontroller och praktiska drifttest fungerade som kvalitetsgrindar. Git-historiken visar både planerade förbättringar och mindre korrigeringar efter återkoppling.
+
+| Moment | Genomförande | Evidens/exempel |
+|---|---|---|
+| Backlog | Brister och förbättringar registrerades som issues med säkerhets- och Terraformetiketter | Issue #12 och #32 samt stängda säkerhetsärenden |
+| Prioritering | Åtkomstförlust och fungerande deployment hanterades först, därefter least privilege, detektion och härdning | Zonflytt PR #61, CI/WIF PR #62, app-PR #24–#28 |
+| Iteration | Små branches och PR:er användes för att ändra en avgränsad kontroll i taget | OS Login, Flow Logs, SBOM, Cosign, scanner och non-root infördes separat |
+| Kvalitetssäkring | Terraform fmt/validate, TFLint, Checkov, apptester, container-smoke-test, Trivy, Cosign och live health checks | GitHub Actions-körningar i avsnitt 14 |
+| Definition of Done | Kod mergad, pipeline grön och relevant kontroll verifierad i drift; kvarvarande risk dokumenterad | `1/1 Ready`, `/healthz`, RBAC `can-i`, scannerjobb och Headscale `configtest` |
+
+### Riskprioritering
+
+Prioriteringen utgick från sannolik påverkan på åtkomst, hemligheter och drift. Hög prioritet gavs åt förlorad Headscale-state, breda CI-identiteter och deploy-RBAC. Medel gavs åt nätverksisolering. Scannerbegränsningar bedömdes lägre efter att attestering och larmväg verifierats. Riskacceptans användes endast när fix saknades eller när sårbar kodväg inte fanns i containern; undantagen fick motivering och slutdatum.
+
+### Retrospektiv
+
+- **Det som fungerade:** små PR:er, signerade artefakter, blockerande tester och direkta driftkontroller gav snabb återkoppling och tydlig historik.
+- **Det som skapade problem:** Headscale låg utanför Infrastructure as Code, bootstrap var separerad från ordinarie Terraform-root och vissa gröna pipelines misstolkades först som bevis på aktiv molnkonfiguration.
+- **Förbättring efter lärdom:** scanneradministration separerades från appdeployment, non-root infördes först efter backup och skrivtest, DNS ändrades först efter backup och `configtest`, och rapporten skiljer nu konsekvent mellan kod, applicerad kontroll och riskacceptans.
+- **Nästa sprint:** backup/återställning, minskad deploy-RBAC, NetworkPolicy samt kontrollerad flytt av GitHub- och GCP-miljön.
+
+En begränsning är att sprintmål och retrospektiv inte dokumenterades konsekvent från projektets första dag. Issues, PR:er och Git-historik gör processen möjlig att följa, men kommande arbete bör använda milstolpar, ansvarig och acceptanskriterier redan när ett ärende skapas.
+
+## 11. Generativ AI och AI-assisterade säkerhetsverktyg
+
+Generativ AI användes som parprogrammerare för kodgranskning, hypotesbildning vid felsökning, förslag på Terraform/Kubernetes-konfiguration, formulering av testfall och strukturering av rapporten. AI kombinerades med deterministiska verktyg: Checkov och TFLint för IaC, Trivy för sårbarheter, Cosign för signatur/attestering, pytest för applikationslogik samt `kubectl`, `gcloud`, `curl` och systemjournaler för faktisk driftstatus.
+
+AI bedömdes lämplig när uppgiften var att snabbt hitta möjliga fel, jämföra alternativ eller skapa ett första förslag. Den bedömdes olämplig som ensam beslutsfattare för IAM, riskacceptans, hemligheter, destruktiva åtgärder eller påståenden om aktiv molnkonfiguration. Exempelvis accepterades inte förslaget att tvinga bort Debian-basberoenden enbart för att minska scannerantalet. Paketborttagning simulerades, Debian Security Tracker kontrollerades och risken reducerades i stället med non-root, seccomp och borttagna capabilities.
+
+AI-svar kvalitetssäkrades genom följande kedja:
+
+1. Påståendet jämfördes med repositorykod eller primär dokumentation.
+2. Ändringen granskades som diff och genom statisk validering.
+3. Tester eller server-side dry-run kördes före applicering.
+4. Backup och återställningsväg säkrades vid tillståndsbärande ändringar.
+5. Resultatet verifierades i drift och dokumenterades med commit, PR eller jobb-ID.
+
+AI förbättrade hastighet och bredd men skapade också risk för övertygande fel, för breda kommandon och förväxling mellan konfigurerat och applicerat. Mänsklig granskning och verktygsbaserad evidens var därför obligatorisk. Inga hemligheter återges i rapporten; känsliga värden ska inte användas som underlag för AI och exponerade autentiseringsuppgifter ska spärras/roteras enligt ordinarie incidentprocess.
+
+## 12. Individuell spårbarhet
+
+Bedömningen ska göras per student. Rapporten tillskriver därför inte en gruppmedlem arbete enbart utifrån muntliga uppgifter. Bidrag styrks med committar, PR-författare, reviews, issues och dokumenterad verifiering. Varje student anger i Canvas vilka delar som är dennes och länkar till relevanta objekt.
+
+Praktiska kommandon för granskning:
+
+```bash
+git shortlog -sne --all
+git log --author="NAMN_ELLER_EPOST" --oneline --all
+```
+
+För Andre finns exempelvis spårbara commits för OS Login på primary (`0e6b150`), VPC Flow Logs (`d2a91fb`), GitHub-runner-ACL (`41c066e`), blockerande CI/WIF (`f8feff5`, `037a16d`, `6e85d55`) samt appens SBOM/Cosign, scannerhärdning och non-root-arbete i app-repot. Den separata individuella redogörelsen sammanfattar dessa utan att ersätta Git-historiken.
+
+## 13. Föreslagen åtgärdsplan
 
 Tiderna är förslag från rapportdatum, inte beslutade leveranslöften.
 
@@ -224,7 +305,7 @@ Tiderna är förslag från rapportdatum, inte beslutade leveranslöften.
 | Före miljöbytet | Spegla repon och inventera Actions-secrets, variables, packages, WIF, Terraform-state och administratörer | Repoägare och infrastrukturansvarig | Ny GitHub-organisation och nytt GCP-projekt fungerar utan att gamla miljön först raderas |
 | Efter varje större ändring | Uppdatera evidens och riskacceptans | Hela gruppen | Rapport, issues och verklig konfiguration överensstämmer |
 
-## 11. Evidens och referenser
+## 14. Evidens och referenser
 
 Infra: [repository](https://github.com/Kurs6-Projekt/team3-blueteam), [baslinje 0db5e0e](https://github.com/Kurs6-Projekt/team3-blueteam/tree/0db5e0e).
 
