@@ -13,7 +13,7 @@ Mitt arbete i Blue Team-projektet har främst handlat om identitetsbaserad SSH-�
 
 ## Verifiering och lärdomar
 
-Ändringarna kontrollerades med `terraform fmt` och `terraform plan` via CI innan de mergades. OS Login byggdes sedan vidare av teamet, bland annat med dokumentation i `docs/os-login.md` och OS Login på primary (PR #54).
+Ändringarna kontrollerades med `terraform fmt -check` och `terraform validate` i PR-kontrollerna innan de mergades, och deployflödet körde sedan `terraform plan` före apply. OS Login byggdes sedan vidare av teamet, bland annat med dokumentation i `docs/os-login.md` och OS Login på primary (PR #54).
 
 Arbetet gav mig bättre förståelse för skillnaden mellan nätverksåtkomst (Headscale/Tailscale) och SSH-identitet (OS Login), hur IAM-roller kan avgränsas till en enskild resurs, och varför konfigurationsfiler med verkliga värden behöver hanteras medvetet i förhållande till CI.
 
