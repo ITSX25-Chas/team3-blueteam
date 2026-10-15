@@ -1,7 +1,5 @@
 # Individuellt bidrag – Marcus
 
-> Utkast att fylla i och kontrollera före inlämning. Beskriv bara arbete du själv utfört.
-
 ## Mina bidrag
 
 Mitt individuella bidrag var främst konfiguration och felsökning kring Headscale/Tailscale.
@@ -19,9 +17,3 @@ Mitt individuella bidrag var främst konfiguration och felsökning kring Headsca
 - `13e3f08` – Allow students to use Headscale DNS
 - `27c511e` – Re-enable Secure Boot on jumphost (senare återställt)
 - `b485044` – Update Terraform provider lock file
-
-**Lägg till eller rätta:** PR-länkar, datum och fler commits: `[fyll i]`
-
-## Text till inlämningsfältet
-
-`[Skriv en kort sammanfattning av dina egna komponenter/ändringar och hänvisa till commits eller PR:er ovan.]`
