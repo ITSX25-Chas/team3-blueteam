@@ -1,0 +1,12 @@
+# Individuell AI-redogörelse – Andre Edvardsson
+
+Under Blue Team-projektet använde jag generativ AI som ett stöd för analys, felsökning, kodgranskning och dokumentation. AI användes inte som ensam beslutsfattare. Min grundprincip var att AI fick föreslå hypoteser och ändringar, medan repositorykod, officiell dokumentation, automatiska tester och den verkliga miljön avgjorde om svaret var korrekt.
+
+AI hjälpte mig bland annat att strukturera felsökningen av Headscale, DNS, OS Login, Kubernetes och GitHub Actions. Den användes även för att granska Terraform- och Kubernetes-konfiguration, föreslå tester samt förklara säkerhetsrisker på ett sätt som gick att dokumentera i rapporten. I applikationsflödet kombinerades AI-stödet med pytest, container-smoke-test, Trivy, Cosign och Kubernetes health checks. För infrastrukturen användes Terraform validate, TFLint, Checkov, GitHub Actions, `gcloud` och kontroller i den aktiva miljön.
+
+Jag accepterade inte AI-svar direkt. Förslag granskades som Git-diff och testades först i begränsad form. Vid ändringar som kunde påverka åtkomsten skapades backup och en återställningsväg innan ändringen applicerades. Exempelvis ändrades Headscale DNS först efter kopia av konfigurationen och godkänt `headscale configtest`. När appen skulle köras som non-root säkerhetskopierades SQLite-databaserna och skrivning testades med den nya UID:n före deployment. Efter deployment kontrollerades UID, avsaknad av service-account-token, databasåtkomst och `/healthz`.
+
+Ett viktigt exempel på kritisk värdering var sårbarhetsscanningen. Ett enkelt sätt att få ett grönt resultat hade varit att ignorera alla ofixade fynd eller tvinga bort Debian-paket. I stället kontrollerade jag vilka paket som krävdes, simulerade borttagning och jämförde de unika CVE:erna med Debian Security Tracker. Resultatet blev containerhärdning och tidsbegränsade, dokumenterade undantag för exakt granskade CVE:er. Nya High/Critical-fynd fortsätter att larma.
+
+AI var lämplig för att snabbt bredda analysen, hitta samband och skapa ett första utkast. Den var olämplig som ensam källa för IAM-beslut, riskacceptans, hemlighetshantering, destruktiva kommandon och påståenden om att kod verkligen var applicerad. Arbetet visade att AI kan effektivisera en säkerhetsprocess, men också att ett välformulerat svar kan vara fel eller ofullständigt. Därför baserade jag slutliga beslut på reproducerbara kontroller och sparade spårbar evidens i commits, PR:er, pipelines och rapporten.
+
