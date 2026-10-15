@@ -167,13 +167,6 @@ resource "google_service_account_iam_member" "cicd_workload_identity" {
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repo}"
 }
 
-resource "google_project_service" "iap" {
-  project = var.project_id
-  service = "iap.googleapis.com"
-
-  disable_on_destroy = false
-}
-
 # Tunnelrollen (roles/iap.tunnelResourceAccessor) hanteras inte i kod ännu.
 # Instansnivå kräver roles/iap.policyAdmin, som vi inte har - försöket gav 403
 # på iap.tunnelInstances.getIamPolicy. Projektnivå skulle fungera men rör IAM
