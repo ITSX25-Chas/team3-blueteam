@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <rect width="1200" height="720" fill="#f5f7fa"/>
+  <text x="60" y="68" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#1f2937">Risköversikt – Team 3</text>
+  <text x="60" y="100" font-family="Arial, sans-serif" font-size="18" fill="#64748b">Bekräftade fynd och attackkedja i pentestlabben</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="60" y="135" width="245" height="115" rx="14" fill="#ffffff" stroke="#dbe2ea"/>
+    <text x="85" y="180" font-size="18" fill="#64748b">Bekräftade fynd</text>
+    <text x="85" y="225" font-size="42" font-weight="700" fill="#1f2937">10</text>
+
+    <rect x="325" y="135" width="245" height="115" rx="14" fill="#ffffff" stroke="#dbe2ea"/>
+    <text x="350" y="180" font-size="18" fill="#64748b">Kritiska fynd</text>
+    <text x="350" y="225" font-size="42" font-weight="700" fill="#b91c1c">5</text>
+
+    <rect x="590" y="135" width="245" height="115" rx="14" fill="#ffffff" stroke="#dbe2ea"/>
+    <text x="615" y="180" font-size="18" fill="#64748b">Hittade flaggor</text>
+    <text x="615" y="225" font-size="42" font-weight="700" fill="#1d4ed8">5</text>
+
+    <rect x="855" y="135" width="285" height="115" rx="14" fill="#ffffff" stroke="#dbe2ea"/>
+    <text x="880" y="180" font-size="18" fill="#64748b">Steg i attackkedjan</text>
+    <text x="880" y="225" font-size="42" font-weight="700" fill="#047857">7</text>
+  </g>
+
+  <text x="60" y="310" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#1f2937">Fynd per allvarlighetsgrad</text>
+  <g font-family="Arial, sans-serif" font-size="18">
+    <text x="60" y="365" fill="#374151">Kritisk</text>
+    <rect x="160" y="342" width="620" height="30" rx="6" fill="#fee2e2"/>
+    <rect x="160" y="342" width="620" height="30" rx="6" fill="#b91c1c"/>
+    <text x="800" y="365" font-weight="700" fill="#b91c1c">5</text>
+
+    <text x="60" y="415" fill="#374151">Hög</text>
+    <rect x="160" y="392" width="620" height="30" rx="6" fill="#ffedd5"/>
+    <rect x="160" y="392" width="124" height="30" rx="6" fill="#ea580c"/>
+    <text x="800" y="415" font-weight="700" fill="#ea580c">1</text>
+
+    <text x="60" y="465" fill="#374151">Medel</text>
+    <rect x="160" y="442" width="620" height="30" rx="6" fill="#fef3c7"/>
+    <rect x="160" y="442" width="372" height="30" rx="6" fill="#d97706"/>
+    <text x="800" y="465" font-weight="700" fill="#d97706">3</text>
+
+    <text x="60" y="515" fill="#374151">Låg</text>
+    <rect x="160" y="492" width="620" height="30" rx="6" fill="#dcfce7"/>
+    <rect x="160" y="492" width="124" height="30" rx="6" fill="#16a34a"/>
+    <text x="800" y="515" font-weight="700" fill="#16a34a">1</text>
+  </g>
+
+  <text x="60" y="575" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#1f2937">Attackkedja</text>
+  <g font-family="Arial, sans-serif" font-size="15" text-anchor="middle">
+    <g fill="#ffffff" stroke="#94a3b8">
+      <rect x="45" y="610" width="135" height="55" rx="10"/>
+      <rect x="205" y="610" width="135" height="55" rx="10"/>
+      <rect x="365" y="610" width="135" height="55" rx="10"/>
+      <rect x="525" y="610" width="135" height="55" rx="10"/>
+      <rect x="685" y="610" width="135" height="55" rx="10"/>
+      <rect x="845" y="610" width="135" height="55" rx="10"/>
+      <rect x="1005" y="610" width="150" height="55" rx="10"/>
+    </g>
+    <g fill="#1f2937">
+      <text x="112" y="643">SQLi</text>
+      <text x="272" y="635">Admin via</text><text x="272" y="654">cookies</text>
+      <text x="432" y="643">RCE</text>
+      <text x="592" y="635">SUID</text><text x="592" y="654">eskalering</text>
+      <text x="752" y="635">Root i</text><text x="752" y="654">container</text>
+      <text x="912" y="635">Intern</text><text x="912" y="654">tjänst</text>
+      <text x="1080" y="635">Dataexfiltration</text>
+    </g>
+    <g fill="#64748b" font-size="25">
+      <text x="192" y="646">→</text><text x="352" y="646">→</text><text x="512" y="646">→</text>
+      <text x="672" y="646">→</text><text x="832" y="646">→</text><text x="992" y="646">→</text>
+    </g>
+  </g>
+</svg>
