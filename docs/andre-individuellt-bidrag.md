@@ -1,9 +1,9 @@
-# Individuellt bidrag – Andre Edvardsson
+# Mitt individuella bidrag – Andre Edvardsson
 
-Text att använda i Canvas och anpassa vid behov:
+Jag har främst arbetat med åtkomst, nätverk, pipelines, Kubernetes och säkerhetskontroller. Jag har också lagt mycket tid på felsökning när Headscale, DNS eller deploymenten inte fungerade. I infra-repot syns några av mina ändringar i `0e6b150` för OS Login, `d2a91fb` för VPC Flow Logs och `41c066e` för GitHub-runnerns Headscale-regler. Jag arbetade även med de blockerande pipelinekontrollerna i `f8feff5`, `037a16d` och `6e85d55`.
 
-Jag arbetade främst med identitet, nätverk, CI/CD, supply-chain-säkerhet, Kubernetes-härdning, övervakning och säkerhetsrapporten. I infra-repot syns mitt arbete bland annat i commits `0e6b150` (OS Login på primary), `d2a91fb` (VPC Flow Logs), `41c066e` (ACL för GitHub-runner), `f8feff5` (blockerande CI och begränsad WIF), `037a16d` (TFLint) och `6e85d55` (Checkov). Jag tog även fram och verifierade den slutliga säkerhetsrapporten.
+I app-repot jobbade jag med ingress och deployment, signerade container-images med Cosign och SBOM i CycloneDX-format. Jag var även med och gjorde containern säkrare genom att köra den utan root, ta bort onödiga rättigheter och separera sårbarhetsscannern från appens vanliga deploykonto. En stor del av detta finns i PR #24–#28.
 
-I app-repot arbetade jag bland annat med ingress/deployment, image-digest och spårbarhet, Cosign-signering, CycloneDX-SBOM, säkerhetsscanner, kontroller av sessioner och deployflöde, uppdaterad runtime-image, scannerisolering, non-root-container och tidsbegränsad riskacceptans. Relevanta PR:er är #24–#28. Jag verifierade ändringarna med tester, signerad SBOM, Trivy, Kubernetes-status, hälsokontroller och praktiska RBAC-/skrivtester.
+Jag kontrollerade ändringarna med tester, Trivy, Cosign, Kubernetes-status och hälsokontroller. Jag arbetade också med säkerhetsrapporten och försökte vara tydlig med skillnaden mellan sådant som bara fanns i koden och sådant som vi faktiskt hade verifierat i drift.
 
-Mitt arbetssätt var iterativt: identifiera risk, skapa avgränsad ändring, köra automatiska kontroller, verifiera i drift och dokumentera kvarstående risk. AI användes som stöd enligt den separata AI-redogörelsen, men beslut och verifiering baserades på kod, tester, officiella källor och faktisk miljöstatus.
+Mitt vanliga arbetssätt var att först försöka förstå problemet, göra en mindre ändring och sedan testa innan jag gick vidare. När något kunde påverka gruppens åtkomst tog jag backup eller såg till att det fanns en väg tillbaka. Git-historiken, pull requests och pipelinekörningarna visar mer detaljerat vilka delar jag har arbetat med.
