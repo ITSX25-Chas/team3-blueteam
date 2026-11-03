@@ -93,10 +93,19 @@ Om en ny primary saknar Kubernetes finns en [återställningsguide](docs/restore
 
 - [Säkerhetsrapport – Markdown](docs/blue-team-security-report.md)
 - [Säkerhetsrapport – PDF](docs/blue-team-security-report.pdf)
-- [André Edvardsson – AI-redogörelse](docs/andre-ai-redogorelse.md)
-- [André Edvardsson – individuellt bidrag](docs/andre-individuellt-bidrag.md)
 - [Guide för OS Login](docs/os-login.md)
 - [Slutrapportering med KPI:er för Team 3](docs/final-report/README.md)
+
+### Teammedlemmar
+
+| Student | Individuellt bidrag | AI-redogörelse | Slutrapport |
+|---|---|---|---|
+| André Edvardsson | [Bidrag](docs/andre-individuellt-bidrag.md) | [AI](docs/andre-ai-redogorelse.md) | [Slutrapport](docs/final-report/andre/individual-report.md) |
+| Carl Persson | [Bidrag](docs/carl-individuellt-bidrag.md) | [AI](docs/carl-ai-redogorelse.md) | [Slutrapport](docs/final-report/carl/individual-report.md) |
+| Erik Alduaifi | [Bidrag](docs/erik-individuellt-bidrag.md) | [AI](docs/erik-ai-redogorelse.md) | [Slutrapport](docs/final-report/erik/individual-report.md) |
+| Jonathan Tsubarah | [Bidrag](docs/jonathan-individuellt-bidrag.md) | [AI](docs/jonathan-ai-redogorelse.md) | [Slutrapport](docs/final-report/jonathan/individual-report.md) |
+| Marcus Gustafsson | [Bidrag](docs/marcus-individuellt-bidrag.md) | [AI](docs/marcus-ai-redogorelse.md) | [Slutrapport](docs/final-report/marcus/individual-report.md) |
+| Viktor Westerlund | Saknas ännu | Saknas ännu | [Slutrapport](docs/final-report/viktor/individual-report.md) |
 
 Git-historik, issues, pull requests och pipelinekörningar används som spårbar evidens för teamets och varje students arbete.
 
