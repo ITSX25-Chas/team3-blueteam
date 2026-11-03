@@ -74,6 +74,8 @@ checkov -d . --framework terraform
 
 Deployment görs av GitHub Actions. Lägg aldrig API-nycklar, kubeconfig, lösenord eller andra hemligheter i repot.
 
+Om en ny primary saknar Kubernetes finns en separat [återställningsguide för k3s](docs/restore-primary-k3s.md).
+
 ## Dokumentation för Blue Team-examinationen
 
 - [Säkerhetsrapport – Markdown](docs/blue-team-security-report.md)
