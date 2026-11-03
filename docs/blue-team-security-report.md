@@ -1,6 +1,6 @@
 # Säkerhetsrapport – Team 3 Blue Team
 
-**Datum:** 2026-11-03 · **Version:** 2.1 · **Status:** Slutversion för examination
+**Datum:** 2026-11-03 · **Version:** 2.2 · **Status:** Slutversion för examination
 
 **Omfattning:** Blue Team-arbetet under vecka 4–7: GCP-infrastruktur, åtkomst, Headscale, Kubernetes, CI/CD och övervakning. Applikationssäkerhet ingår där den påverkar driften.
 
@@ -8,15 +8,15 @@
 
 ## 1. Sammanfattning
 
-Teamet har infört flera säkerhetsåtgärder: OS Login, begränsade nätverksregler, identitetsbaserad CI-autentisering, imagesignering och återkommande sårbarhetsskanning. Vid slutkontroll den 12 oktober var Headscale aktiv, tre noder online och applikationen `1/1 Ready` med fungerande databas. Appen kör som icke-root utan monterad Kubernetes-token. Deploymenten kräver godkända applikationstester. Scannerkonfigurationen hanteras separat av administratör, inte av appens deploykonto.
+Teamet har infört OS Login, begränsade nätverksregler, identitetsbaserad CI-autentisering, imagesignering, SBOM, NetworkPolicy och återkommande sårbarhetsskanning. Efter flytten till Comerits GCP-projekt återställdes k3s på nya primary den 3 november. En ny subnet-router tog över `10.0.3.0/24`, kubeconfig roterades och appdeployment [41608640621](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/41608640621) passerade tester, SBOM, Cosign, policykontroll och rollout. Slutkontrollen visade nod `Ready`, app `1/1`, aktiv NetworkPolicy, Sigstore-policy i `enforce` och HTTP 200.
 
 Sårbarhetsscannern verifierar CycloneDX-attesteringen kryptografiskt mot GitHub Actions OIDC-identitet innan innehållet skannas. Trivy är låst till version `0.75.0`. En ombyggd image skannades den 3 november: 44 High-paketträffar, nio unika CVE:er och 0 Critical. De nio granskade CVE:erna har tidsbegränsade undantag till den 20 november 2026; nya eller ej accepterade High/Critical-fynd ger fortsatt rött Discord-larm. Ett grönt larm och ett separat märkt rött testlarm har verifierat larmvägen.
 
 Den tydligaste kvarvarande driftrisken är att Headscales data ligger på jumphostens startdisk. Vid en tidigare ersättning av maskinen behövde tjänsten och klientåtkomsten återställas. Infrastruktur som går att återskapa med Terraform innebär alltså inte att tjänstens identiteter, nycklar och databas automatiskt återställs.
 
-Kvarvarande huvudrisker är Headscales beständighet, breda infra-CI- och app-deploybehörigheter samt avsaknad av Kubernetes NetworkPolicy. Infra-skanningen gjordes blockerande i PR #62. Repot har flyttats till `ITSX25-Chas` och infrastrukturen till GCP-projektet `itsx25-comerit`. Deploykörning `40937737808` lyckades den 29 oktober 2026. Flytten visar att Infrastructure as Code fungerade, men tjänsternas tillstånd och åtkomst måste fortfarande säkerhetskopieras och återtestas. Rapporten visar förbättringsbehov, inte att någon angripare har utnyttjat dem.
+Kvarvarande huvudrisker är Headscales beständighet, manuellt återställd k3s/routerkonfiguration, bred infra-CI, secret-läsning för appens deployidentitet och långlivad Kubernetes-token. Infra-skanningen gjordes blockerande i PR #62. Flytten visar att Infrastructure as Code fungerade för GCP-resurserna, men inte automatiskt återställde tjänstedata och klusterkonfiguration. Rapporten visar förbättringsbehov, inte att någon angripare har utnyttjat dem.
 
-**Viktig rättelse:** Infra-repots `main` har aktiva GitHub-rulesets med två obligatoriska granskningar och kontrollen `Format & Validate`. En tidigare kontroll av enbart äldre branch protection gav en felaktig bild. PR #62 mergades den 8 oktober och dess root-Terraform deployment lyckades.
+**Viktig rättelse:** Infra-repots `main` har ett aktivt GitHub-ruleset med en obligatorisk granskning, kontrollen `Format & Validate` samt skydd mot force-push och radering. En tidigare kontroll av enbart äldre branch protection gav en felaktig bild. PR #62 mergades den 8 oktober och dess root-Terraform deployment lyckades.
 
 ### Bedömningsspårbarhet
 
@@ -29,16 +29,17 @@ Kvarvarande huvudrisker är Headscales beständighet, breda infra-CI- och app-de
 
 ## 2. Metod och avgränsningar
 
-Underlaget består av versionshanterad konfiguration, PR:er/issues samt kontroller via GitHub, SSH och Kubernetes. Infra-baslinjen är `origin/main`, commit `46b5846`. App-baslinjen efter PR #28 är commit `92e67d1`.
+Underlaget består av versionshanterad konfiguration, PR:er/issues samt kontroller via GitHub, SSH och Kubernetes. Infra-baslinjen vid slutgranskningen är `origin/main`, commit `9f75dc5`. App-baslinjen är `main` efter PR #29, commit `b25e3a8`.
 
 Status anges som:
 
-- **Verifierat 8–12 oktober:** direkt observation vid rapportarbetet.
+- **Verifierat 3 november:** direkt observation i den återställda Comerit-miljön.
+- **Verifierat 8–12 oktober:** äldre direkt observation före miljöbytet.
 - **Tidigare observation 5 oktober:** behöver kontrolleras igen innan slutlig slutsats om nuläget.
 - **Konfigurerat i kod:** visar avsikt, inte i sig att ändringen är applicerad i GCP.
 - **Uppgift från teamet:** inte självständigt verifierad i denna kontroll.
 
-Ingen destruktiv testning eller återställning har gjorts. Den tidigare scannerrollen nekade direkt secret-läsning men tillät CronJob-ändringar; detta möjliggjorde indirekt secret-åtkomst. Behörigheten återkallades och verifierades den 10 oktober. Loggtäckning, backupåterställning och samtliga faktiska GCP-rättigheter har inte fullständigt verifierats. En stängd issue eller grön pipeline är inte ensam bevis på att en risk är åtgärdad.
+Ingen destruktiv testning har gjorts. En kontrollerad återställning av k3s, ingress, Sigstore-policy, deploy-RBAC och subnet-routing genomfördes den 3 november på nya primary. Den tidigare scannerrollen nekade direkt secret-läsning men tillät CronJob-ändringar; behörigheten återkallades. Loggtäckning, återställning av Headscale-state och samtliga faktiska GCP-rättigheter har inte fullständigt verifierats. En stängd issue eller grön pipeline är inte ensam bevis på att en risk är åtgärdad.
 
 ## 3. Miljön och skyddsgränserna
 
@@ -62,7 +63,7 @@ TLS för Headscale termineras på instructor-proxy. Avsaknad av nginx eller port
 | Område | Underlag och status | Begränsning |
 |---|---|---|
 | SSH-identitet | OS Login aktiverat i kod för jumphost och primary; PR #54 och #50 | Fullständig aktuell IAM-granskning återstår |
-| Granskning av infra | Aktiva rulesets: två godkännanden, `Format & Validate`, skydd mot radering och force-push | Eventuella bypass-aktörer inte granskade |
+| Granskning av infra | Aktivt ruleset: en godkännare, `Format & Validate`, skydd mot radering och force-push | Eventuella bypass-aktörer inte granskade |
 | CI-autentisering | WIF finns; tidigare Editor-roll ersatt i PR #57; PR #62 begränsar WIF-koden till `main` | `roles/compute.admin` är fortfarande projektomfattande; bootstrap-ändringen är inte verifierad som applicerad |
 | Infra-kontroller | PR #62 gör TFLint och Checkov blockerande; deploykörning `37777508119` lyckades | Dokumenterade Checkov-undantag måste omprövas när förutsättningarna ändras |
 | Nätverksåtkomst | Begränsade SSH-källor, IAP-regel och Headscale-ACL i kod; PR #49 och #53 | Faktisk åtkomst bör testas från varje användarroll |
@@ -70,9 +71,9 @@ TLS för Headscale termineras på instructor-proxy. Avsaknad av nginx eller port
 | Loggning | VPC Flow Logs i kod, PR #55 | Insamling, retention och larmleverans behöver verifieras |
 | Signering och SBOM | App-repots PR #11 och #13 inför signering och SBOM-attestering | Signatur betyder inte att imagen saknar sårbarheter |
 | Appkonton | PR #24 kontrollerar `enabled` även när en befintlig session laddas | Administrativ process för att avaktivera konton behöver dokumenteras |
-| App-deployment | PR #24 kräver godkända tester före deploy-jobbet; 22 tester passerade. Den 3 november aktiverades ruleset `Protect main` med PR-krav, en granskare och kontrollen `tests` | Ny deploy efter organisationsflytten återstår att verifiera |
-| Containerhärdning | PR #27: UID/GID 10001, `RuntimeDefault` seccomp, alla capabilities borttagna, privilege escalation nekad och service-account-token avstängd | NetworkPolicy saknas fortfarande |
-| Drift | Headscale `active`, tre noder online; company-website `1/1` och `/healthz` frisk den 12 oktober | Ögonblicksbild, inte tillgänglighetsmätning |
+| App-deployment | PR #24 kräver godkända tester före deploy-jobbet. Körning `41608640621` passerade tester, imagebygge, SBOM, Cosign, Headscale, kubeconfig och rollout den 3 november | En lyckad körning är en ögonblicksbild, inte ett tillgänglighetsmått |
+| Containerhärdning | UID/GID 10001, `RuntimeDefault` seccomp, alla capabilities borttagna, privilege escalation nekad, service-account-token avstängd och NetworkPolicy aktiv | Policyn behöver regressionstestas när appens trafikbehov ändras |
+| Drift | Nya k3s-noden `Ready`; company-website `1/1`; Sigstore-policy `enforce`; ingress och HTTP 200 verifierade den 3 november | k3s och subnet-router återställs med separat procedur, inte fullständigt via Terraform |
 | Scanner | PR #25–#28: verifierad attestering, Trivy `0.75.0`, separat administration och tidsbegränsad riskacceptans | Tredjeparts-SBOM kan påverka träffsäkerheten; lokal ombyggnad den 3 november gav 44 Debian-paketträffar |
 | Larmväg | Grönt larm och separat rött testlarm levererades; testjobbet avslutades `Complete` | Testlarm bevisar leverans, inte upptäckt av ett verkligt intrång |
 
@@ -112,19 +113,19 @@ App-repots `main` skyddas sedan den 3 november av ett aktivt ruleset som kräver
 
 ### B04 – Appens deploy-identitet behöver begränsas
 
-**Uppdatering 12 oktober:** möjligheten att skapa/patcha scanner-CronJobs gav indirekt åtkomst till monterade secrets, även när direkt secret-läsning nekades. PR #26 tog bort scanner-apply från appens pipeline och tömde den tidigare scannerrollen och dess binding. Deploykontot nekas nu patch av CronJobs i `security-tools`. Kontroll på primary visar dock fortfarande `yes` för läsning av secrets och skapande av pods i `default`.
+**Uppdatering 3 november:** möjligheten att skapa/patcha scanner-CronJobs gav tidigare indirekt åtkomst till monterade secrets. PR #26 tog bort scanner-apply från appens pipeline och tömde scannerrollen. I det återställda klustret nekas deploykontot både pod-skapande i `default` och patch av CronJobs i `security-tools`. Kontot kan fortfarande läsa och uppdatera secrets i `default`, eftersom nuvarande pipeline själv applicerar applikationssecreten.
 
-**Prioritet: Hög, verifierad kvarvarande risk.** Deployidentiteten kan läsa applikationssecrets och skapa pods i `default`. En komprometterad pipeline kan därmed få större åtkomst än vad vanlig deployment kräver.
+**Prioritet: Medel, verifierad kvarvarande risk.** Pod- och scannerbehörigheten är borttagen, men en komprometterad pipeline kan fortfarande läsa applikationssecrets i `default`.
 
 **Åtgärd:** minimera RBAC, skilj engångs-bootstrap från vanlig deployment och utred kortlivade autentiseringsuppgifter. Secrets ska aldrig kopieras in i rapporter. Teamets `HEADSCALE_API_KEY` och `HEADSCALE_USER_ID` får inte ändras utan samordning.
 
 ### B05 – Otillräcklig isolering i Kubernetes
 
-**Prioritet: Medel, delvis åtgärdad.** Ingen NetworkPolicy hittades den 12 oktober. PR #27 åtgärdade containerdelen: appen kör som UID 10001, saknar service-account-token, tappar alla capabilities och använder `RuntimeDefault` seccomp.
+**Prioritet: Låg efter åtgärd.** Ingen NetworkPolicy hittades den 12 oktober. Efter PR #29 och återställningen den 3 november finns `company-website-network-policy` aktiv för poddar med etiketten `app=company-website`. Appen kör samtidigt som UID 10001, saknar service-account-token, tappar alla capabilities och använder `RuntimeDefault` seccomp.
 
-**Konsekvens:** en applikationskompromettering kan ge onödig nätverksåtkomst och större påverkan inom containern.
+**Restrisk:** felaktiga eller för breda egressregler kan fortfarande ge mer nätverksåtkomst än nödvändigt. Policyns funktion behöver testas efter förändrade beroenden.
 
-**Åtgärd:** inför testad nätverkssegmentering som bevarar DNS, ingress och nödvändiga externa anslutningar. Behåll non-root- och tokenkontrollerna i CI.
+**Åtgärd:** behåll policyn i pipeline, dokumentera tillåtna flöden och lägg till positiva och negativa nätverkstester.
 
 ### B06 – Kvarvarande begränsningar i scannerresultatet
 
@@ -201,6 +202,14 @@ Deploykörning [40937737808](https://github.com/ITSX25-Chas/team3-blueteam/actio
 
 Lärdom: flytten minskade personberoendet för moln- och repoägarskap, men visade också varför tillstånd, externa variabler och centralt förvaltade API:er måste skiljas från resurser som teamets pipeline själv äger.
 
+### Återställning av k3s och subnet-routing i Comerit
+
+Den 3 november konstaterades att nya `team3-primary` saknade k3s. App-pipelinen nådde samtidigt den gamla miljön eftersom Headscale fortfarande annonserade `10.0.3.0/24` från den tidigare jumphosten. Skillnaden bekräftades genom att jämföra Kubernetes-certifikatets utfärdare och fingerprint via Tailnet med certifikatet på nya primary.
+
+Ett nytt k3s-kluster installerades med ingress-nginx, deploy-RBAC, Sigstore policy-controller och en `ClusterImagePolicy` för organisationens nya GHCR-adress. Nya Comerit-jumphosten registrerades som `team3-comerit-router`, dess route godkändes och den gamla nodens Team 3-route togs bort. En ny kubeconfig skapades och GitHub-secreten roterades. Första försöket stoppades korrekt av TLS-kontrollen när routen fortfarande gick till gamla klustret. Efter routebytet passerade körning `41608640621`, och appen verifierades som `1/1`, NetworkPolicy aktiv och HTTP 200.
+
+Lärdom: samma IP-adress och en grön nätverkskontroll bevisar inte vilken miljö som nås. Efter migration ska klusteridentitet, certifikat, routeägare, image-digest och faktisk workload verifieras. Återställningsproceduren finns i `docs/restore-primary-k3s.md`, men k3s och routerstate är ännu inte fullständigt deklarerade i Terraform.
+
 ## 7. Loggning och detektion
 
 | Händelse att upptäcka | Underlag | Föreslaget test |
@@ -271,14 +280,14 @@ Arbetet bedrevs som ett lättviktigt Kanban-flöde i GitHub. Säkerhetsbehov dok
 
 ### Riskprioritering
 
-Prioriteringen utgick från sannolik påverkan på åtkomst, hemligheter och drift. Hög prioritet gavs åt förlorad Headscale-state, breda CI-identiteter och deploy-RBAC. Medel gavs åt nätverksisolering. Scannerbegränsningar bedömdes lägre efter att attestering och larmväg verifierats. Riskacceptans användes endast när fix saknades eller när sårbar kodväg inte fanns i containern; undantagen fick motivering och slutdatum.
+Prioriteringen utgick från sannolik påverkan på åtkomst, hemligheter och drift. Hög prioritet gavs åt förlorad Headscale-state och breda CI-identiteter. Deploy-RBAC sänktes till medel efter att pod- och scannerbehörigheter tagits bort. Nätverksisolering sänktes efter verifierad NetworkPolicy men kräver fortsatta tester. Riskacceptans användes endast när fix saknades eller när sårbar kodväg inte fanns i containern; undantagen fick motivering och slutdatum.
 
 ### Retrospektiv
 
 - **Det som fungerade:** små PR:er, signerade artefakter, blockerande tester och direkta driftkontroller gav snabb återkoppling och tydlig historik.
-- **Det som skapade problem:** Headscale låg utanför Infrastructure as Code, bootstrap var separerad från ordinarie Terraform-root och vissa gröna pipelines misstolkades först som bevis på aktiv molnkonfiguration.
-- **Förbättring efter lärdom:** scanneradministration separerades från appdeployment, non-root infördes först efter backup och skrivtest, DNS ändrades först efter backup och `configtest`, och rapporten skiljer nu konsekvent mellan kod, applicerad kontroll och riskacceptans.
-- **Nästa sprint:** backup/återställning, minskad deploy-RBAC, NetworkPolicy samt kontrollerad flytt av GitHub- och GCP-miljön.
+- **Det som skapade problem:** Headscale och k3s låg delvis utanför Infrastructure as Code, bootstrap var separerad från ordinarie Terraform-root och en gammal subnet-route ledde först pipelinen till fel kluster.
+- **Förbättring efter lärdom:** scanneradministration separerades från appdeployment, non-root och NetworkPolicy infördes, DNS ändrades först efter backup och `configtest`, och miljöidentitet verifierades med certifikat och verklig workload.
+- **Nästa sprint:** återställningstest av Headscale-state, kortlivad Kubernetes-identitet, ytterligare minskad secret-behörighet och automatiska positiva/negativa NetworkPolicy-tester.
 
 En begränsning är att sprintmål och retrospektiv inte dokumenterades konsekvent från projektets första dag. Issues, PR:er och Git-historik gör processen möjlig att följa, men kommande arbete bör använda milstolpar, ansvarig och acceptanskriterier redan när ett ärende skapas.
 
@@ -309,7 +318,7 @@ git shortlog -sne --all
 git log --author="NAMN_ELLER_EPOST" --oneline --all
 ```
 
-För **Andre Edvardsson** finns exempelvis spårbara commits för OS Login på primary (`0e6b150`), VPC Flow Logs (`d2a91fb`), GitHub-runner-ACL (`41c066e`), blockerande CI/WIF (`f8feff5`, `037a16d`, `6e85d55`) samt appens SBOM/Cosign, scannerhärdning och non-root-arbete i app-repot. Den separata individuella redogörelsen sammanfattar dessa utan att ersätta Git-historiken.
+För **André Edvardsson** finns exempelvis spårbara commits för OS Login på primary (`0e6b150`), VPC Flow Logs (`d2a91fb`), GitHub-runner-ACL (`41c066e`), blockerande CI/WIF (`f8feff5`, `037a16d`, `6e85d55`) samt appens SBOM/Cosign, scannerhärdning och non-root-arbete i app-repot. Den 3 november dokumenterade och genomförde han även återställningen av k3s, deploy-RBAC, Sigstore-policy, kubeconfig och subnet-routing i Comerits miljö. Den separata individuella redogörelsen sammanfattar dessa utan att ersätta Git-historiken.
 
 ## 13. Föreslagen åtgärdsplan
 
@@ -320,15 +329,15 @@ Tiderna är förslag från rapportdatum, inte beslutade leveranslöften.
 | Inom en vecka | Backup och återställning av Headscale | Infrastrukturansvarig | Återställning demonstrerad i separat testmiljö |
 | Inom en vecka | Flytta appens SQLite-backup till separat, krypterad lagringsplats och återställningstesta | Driftansvarig | Återställd kopia klarar integritetskontroll och apptest |
 | Inom en vecka | Applicera/verifiera bootstrap-WIF och minska Compute-behörigheten | Två utsedda granskare | Endast rätt repo/main får autentisera; normal deploy fungerar |
-| Inom en vecka | Minska kvarvarande deploy-RBAC i `default` och utred kortlivad Kubernetes-identitet | CI/Kubernetes-ansvarig | Deployment fungerar utan onödiga pod-/secret-rättigheter |
-| Inom två veckor | Inför och testa container-/nätverksisolering | Kubernetes-ansvarig | App fungerar; otillåten testtrafik blockeras |
+| Inom en vecka | Ta bort deployidentitetens kvarvarande secret-läsning och inför kortlivad Kubernetes-identitet | CI/Kubernetes-ansvarig | Deployment fungerar utan läsning av befintliga secrets och utan långlivad token |
+| Inom två veckor | Regressionstesta container- och nätverksisoleringen | Kubernetes-ansvarig | Nödvändig trafik fungerar och otillåten testtrafik blockeras |
 | Inom två veckor | Bygg checksummeverifierad scannerimage och dokumentera larmhantering | Övervakningsansvarig | Samma scannerartefakt används reproducerbart och larm får ägare |
-| Efter miljöbytet | Verifiera Actions-variabler, WIF, Terraform-state, OS Login, Headscale-state och ägare i den nya miljön | Repoägare och infrastrukturansvarig | Deploy är grön, rätt personer kommer in och dokumenterat tillstånd kan återställas |
+| Efter miljöbytet | Slutför verifiering av Terraform-state, OS Login och Headscale-backup i den nya miljön | Repoägare och infrastrukturansvarig | Rätt personer kommer in och dokumenterat tillstånd kan återställas |
 | Efter varje större ändring | Uppdatera evidens och riskacceptans | Hela gruppen | Rapport, issues och verklig konfiguration överensstämmer |
 
 ## 14. Evidens och referenser
 
-Infra: [repository](https://github.com/ITSX25-Chas/team3-blueteam), [aktuell baslinje 46b5846](https://github.com/ITSX25-Chas/team3-blueteam/tree/46b5846).
+Infra: [repository](https://github.com/ITSX25-Chas/team3-blueteam), [main-baslinje 9f75dc5](https://github.com/ITSX25-Chas/team3-blueteam/tree/9f75dc5).
 
 - [PR #49: ACL](https://github.com/ITSX25-Chas/team3-blueteam/pull/49), [#50: gamla SSH-nycklar](https://github.com/ITSX25-Chas/team3-blueteam/pull/50), [#54: OS Login primary](https://github.com/ITSX25-Chas/team3-blueteam/pull/54).
 - [PR #53: runner-ACL](https://github.com/ITSX25-Chas/team3-blueteam/pull/53), [#55: Flow Logs](https://github.com/ITSX25-Chas/team3-blueteam/pull/55), [#57: CI-roll](https://github.com/ITSX25-Chas/team3-blueteam/pull/57).
@@ -336,7 +345,9 @@ Infra: [repository](https://github.com/ITSX25-Chas/team3-blueteam), [aktuell bas
 - [Issue #32: Secure Boot](https://github.com/ITSX25-Chas/team3-blueteam/issues/32), [PR #61: zonflytt](https://github.com/ITSX25-Chas/team3-blueteam/pull/61), [körning 36853609140](https://github.com/ITSX25-Chas/team3-blueteam/actions/runs/36853609140).
 - App: [PR #11: Cosign](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/11), [#13: SBOM](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/13), [#20: beroenden](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/20), [#24: sessioner och deploykontroller](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/24), [#25: härdad scanner](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/25), [#26: scannerisolering och basimage](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/26), [#27: non-root](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/27), [#28: tidsbegränsad riskacceptans](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/28).
 - [App-pipeline 38042577862](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/38042577862): non-root-image, tester, SBOM, signering och deployment passerade. [Pipeline 38055948795](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/38055948795) verifierade slutläget efter PR #28.
+- [App-PR #29](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/29) och [deployment 41608640621](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/41608640621): organisationsflytt, NetworkPolicy, resource limits, säkerhetsheaders, ny kubeconfig och lyckad rollout i Comerits k3s-kluster.
+- [Återställningsguide för k3s](restore-primary-k3s.md) och skriptet `scripts/bootstrap-primary-k3s.sh` dokumenterar återuppbyggnaden av primary.
 
-Kontroller den 8–12 oktober: GitHub effective rules för `main`, `systemctl is-active headscale`, `headscale configtest`, `findmnt -T /var/lib/headscale`, interna och publika DNS-/HTTP-test, `kubectl get deploy`, scannerjobb, `kubectl get networkpolicy -A` samt RBAC-test med `kubectl auth can-i`. Råloggar innehåller inga hemligheter i rapporten; relevanta jobbnamn och pipeline-ID finns ovan för spårbarhet.
+Kontroller den 8 oktober–3 november: GitHub effective rules för `main`, `systemctl is-active headscale`, `headscale configtest`, certifikatfingerprints, routes, DNS-/HTTP-test, k3s node/pod/deployment/ingress/NetworkPolicy, ClusterImagePolicy samt RBAC-test med `kubectl auth can-i`. Råloggar innehåller inga hemligheter i rapporten; relevanta jobbnamn och pipeline-ID finns ovan för spårbarhet.
 
-**Slutsats:** Miljön är i drift och flera skydd är verifierade. Leveranskedjan har tester före deployment, signerad och verifierad SBOM, versionslåst skanning och testad larmleverans. Appcontainern är tydligt härdad jämfört med utgångsläget. Rapporten bedöms färdig för inlämning, men miljön är inte riskfri. Högst prioritet är verifierbar Headscale- och databasåterställning, minskade infra- och Kubernetes-behörigheter, nätverksisolering samt kontrollerad flytt till ny GitHub-organisation och nytt GCP-projekt.
+**Slutsats:** Miljön är i drift i Comerits GCP-projekt och flera skydd är verifierade. Leveranskedjan har tester före deployment, signerad och verifierad SBOM, versionslåst skanning, Sigstore-policy och testad larmleverans. Appcontainern kör non-root med aktiv NetworkPolicy. Rapporten bedöms färdig för inlämning, men miljön är inte riskfri. Högst prioritet är verifierbar Headscale- och databasåterställning, minskade infra- och secret-behörigheter samt kortlivad Kubernetes-autentisering.
