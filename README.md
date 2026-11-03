@@ -96,6 +96,7 @@ Om en ny primary saknar Kubernetes finns en [återställningsguide](docs/restore
 - [André Edvardsson – AI-redogörelse](docs/andre-ai-redogorelse.md)
 - [André Edvardsson – individuellt bidrag](docs/andre-individuellt-bidrag.md)
 - [Guide för OS Login](docs/os-login.md)
+- [Slutrapportering med KPI:er för Team 3](docs/final-report/README.md)
 
 Git-historik, issues, pull requests och pipelinekörningar används som spårbar evidens för teamets och varje students arbete.
 
