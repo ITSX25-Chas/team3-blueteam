@@ -21,6 +21,17 @@ flowchart LR
 
 Miljön körs i GCP-projektet `itsx25-comerit`. Primary saknar extern IP och nås via jumphosten. SSH-identitet hanteras med OS Login och infrastrukturen deployas från GitHub Actions med Workload Identity Federation i stället för statiska GCP-nycklar.
 
+## Driftstatus
+
+Miljön återställdes i Comerits GCP-projekt den 3 november 2026:
+
+- `team3-primary` kör ett nytt k3s-kluster och rapporterar `Ready`.
+- `team3-comerit-router` annonserar `10.0.3.0/24` via Headscale.
+- Den gamla jumphosten annonserar inte längre Team 3:s subnät.
+- ingress-nginx, Sigstore policy-controller och applikationens NetworkPolicy är aktiva.
+- Senaste [deploymenten i Team3-ThaCompany](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/41608640621) är grön.
+- `company-website.team3.arpa` svarade med HTTP 200 efter deployment.
+
 ## Säkerhetskontroller
 
 - OS Login och separata nivåer för vanlig åtkomst och sudo.
@@ -32,7 +43,8 @@ Miljön körs i GCP-projektet `itsx25-comerit`. Primary saknar extern IP och nå
 - Container-images byggs med spårbar commit och immutable digest.
 - CycloneDX-SBOM skapas och binds till imagen med Cosign.
 - Trivy skannar sårbarheter och skickar larm till Discord.
-- Applikationsrepots härdning omfattar körning utan root, borttagen service-account-token, seccomp, NetworkPolicy, resursgränser och health checks. Ändringarna ska verifieras efter deployment.
+- Applikationen kör utan root, utan service-account-token och utan extra Linux-capabilities.
+- seccomp, NetworkPolicy, resursgränser och health checks verifierades efter deployment.
 
 ## Repositorystruktur
 
@@ -42,6 +54,7 @@ Miljön körs i GCP-projektet `itsx25-comerit`. Primary saknar extern IP och nå
 ├── bootstrap/               # Äldre bootstrap för fristående miljö
 ├── docs/                    # Rapporter och individuella redogörelser
 ├── headscale/               # Headscale-policy
+├── scripts/                 # Återställning av k3s på primary
 ├── backend.tf               # Terraform-state i GCS
 ├── main.tf                  # GCP-resurser, nätverk och IAM
 ├── variables.tf             # Terraform-variabler
@@ -74,14 +87,14 @@ checkov -d . --framework terraform
 
 Deployment görs av GitHub Actions. Lägg aldrig API-nycklar, kubeconfig, lösenord eller andra hemligheter i repot.
 
-Om en ny primary saknar Kubernetes finns en separat [återställningsguide för k3s](docs/restore-primary-k3s.md).
+Om en ny primary saknar Kubernetes finns en [återställningsguide](docs/restore-primary-k3s.md) och ett återkörbart [installationsskript](scripts/bootstrap-primary-k3s.sh).
 
 ## Dokumentation för Blue Team-examinationen
 
 - [Säkerhetsrapport – Markdown](docs/blue-team-security-report.md)
 - [Säkerhetsrapport – PDF](docs/blue-team-security-report.pdf)
-- [Andre Edvardsson – AI-redogörelse](docs/andre-ai-redogorelse.md)
-- [Andre Edvardsson – individuellt bidrag](docs/andre-individuellt-bidrag.md)
+- [André Edvardsson – AI-redogörelse](docs/andre-ai-redogorelse.md)
+- [André Edvardsson – individuellt bidrag](docs/andre-individuellt-bidrag.md)
 - [Guide för OS Login](docs/os-login.md)
 
 Git-historik, issues, pull requests och pipelinekörningar används som spårbar evidens för teamets och varje students arbete.
@@ -100,6 +113,7 @@ Blue Team- och Red Team-rapporterna ska inte blandas ihop vid inlämningen.
 De viktigaste kvarstående riskerna beskrivs mer utförligt i säkerhetsrapporten:
 
 - Headscale är fortfarande beroende av manuellt hanterat tillstånd och backup.
+- k3s och subnet-routern återställs fortfarande med ett separat skript och hanteras inte helt av Terraform.
 - Kubernetes-deploymenten använder fortfarande en långlivad autentisering.
 - Full TLS saknas för den interna applikationen.
 - Terraform-state och centrala GCP-rättigheter måste verifieras tillsammans med Comerit.
