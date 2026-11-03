@@ -1,6 +1,6 @@
 # Säkerhetsrapport – Team 3 Blue Team
 
-**Datum:** 2026-10-13 · **Version:** 2.0 · **Status:** Slutversion för examination
+**Datum:** 2026-11-03 · **Version:** 2.1 · **Status:** Slutversion för examination
 
 **Omfattning:** Blue Team-arbetet under vecka 4–7: GCP-infrastruktur, åtkomst, Headscale, Kubernetes, CI/CD och övervakning. Applikationssäkerhet ingår där den påverkar driften.
 
@@ -10,11 +10,11 @@
 
 Teamet har infört flera säkerhetsåtgärder: OS Login, begränsade nätverksregler, identitetsbaserad CI-autentisering, imagesignering och återkommande sårbarhetsskanning. Vid slutkontroll den 12 oktober var Headscale aktiv, tre noder online och applikationen `1/1 Ready` med fungerande databas. Appen kör som icke-root utan monterad Kubernetes-token. Deploymenten kräver godkända applikationstester. Scannerkonfigurationen hanteras separat av administratör, inte av appens deploykonto.
 
-Sårbarhetsscannern verifierar CycloneDX-attesteringen kryptografiskt mot GitHub Actions OIDC-identitet innan innehållet skannas. Trivy är låst till version `0.75.0`. Åtta granskade CVE:er är tidsbegränsat riskaccepterade till den 10 november 2026; nya eller ej accepterade High/Critical-fynd ger fortsatt rött Discord-larm. Ett grönt larm och ett separat märkt rött testlarm har verifierat larmvägen.
+Sårbarhetsscannern verifierar CycloneDX-attesteringen kryptografiskt mot GitHub Actions OIDC-identitet innan innehållet skannas. Trivy är låst till version `0.75.0`. En ombyggd image skannades den 3 november: 44 High-paketträffar, nio unika CVE:er och 0 Critical. De nio granskade CVE:erna har tidsbegränsade undantag till den 20 november 2026; nya eller ej accepterade High/Critical-fynd ger fortsatt rött Discord-larm. Ett grönt larm och ett separat märkt rött testlarm har verifierat larmvägen.
 
 Den tydligaste kvarvarande driftrisken är att Headscales data ligger på jumphostens startdisk. Vid en tidigare ersättning av maskinen behövde tjänsten och klientåtkomsten återställas. Infrastruktur som går att återskapa med Terraform innebär alltså inte att tjänstens identiteter, nycklar och databas automatiskt återställs.
 
-Kvarvarande huvudrisker är Headscales beständighet, breda infra-CI- och app-deploybehörigheter samt avsaknad av Kubernetes NetworkPolicy. Infra-skanningen gjordes blockerande i PR #62. Det planerade bytet av GitHub-organisation och GCP-projekt är också en förändringsrisk som kräver backup, ägarskapskontroll och ny verifiering. Rapporten visar förbättringsbehov, inte att någon angripare har utnyttjat dem.
+Kvarvarande huvudrisker är Headscales beständighet, breda infra-CI- och app-deploybehörigheter samt avsaknad av Kubernetes NetworkPolicy. Infra-skanningen gjordes blockerande i PR #62. Repot har flyttats till `ITSX25-Chas` och infrastrukturen till GCP-projektet `itsx25-comerit`. Deploykörning `40937737808` lyckades den 29 oktober 2026. Flytten visar att Infrastructure as Code fungerade, men tjänsternas tillstånd och åtkomst måste fortfarande säkerhetskopieras och återtestas. Rapporten visar förbättringsbehov, inte att någon angripare har utnyttjat dem.
 
 **Viktig rättelse:** Infra-repots `main` har aktiva GitHub-rulesets med två obligatoriska granskningar och kontrollen `Format & Validate`. En tidigare kontroll av enbart äldre branch protection gav en felaktig bild. PR #62 mergades den 8 oktober och dess root-Terraform deployment lyckades.
 
@@ -22,13 +22,14 @@ Kvarvarande huvudrisker är Headscales beständighet, breda infra-CI- och app-de
 
 | Kursmål | Var målet styrks |
 |---|---|
+| Mål 1 – MITRE ATT&CK och TTP:er | Avsnitt 8 beskriver ATT&CK:s struktur och kopplar samtliga prioriterade brister B01–B07 till relevanta tekniker. Mappningen visar hur riskerna kan användas i hotanalys, detektion och prioritering. |
 | Mål 7 – sammanhängande säkerhetsarkitektur | Avsnitt 3–8 visar sambandet mellan nätverk, identitet, CI/CD, containerskydd, övervakning och incidentrespons. Avsnitt 5 visar kvarstående risk och avvägningar. |
 | Mål 8 – agilt säkerhetsprojekt | Avsnitt 10 beskriver backlog, prioritering, arbetsflöde, kvalitetssäkring och retrospektiva förbättringar. Issues, PR:er och commits utgör spårbar evidens. |
 | Mål 11 – AI i arbetsflödet | Avsnitt 11 beskriver användningsområden, begränsningar, mänskliga beslut och teknisk verifiering. Den individuella AI-redogörelsen lämnas dessutom separat. |
 
 ## 2. Metod och avgränsningar
 
-Underlaget består av versionshanterad konfiguration, PR:er/issues samt kontroller via GitHub, SSH och Kubernetes. Infra-baslinjen är `origin/main`, commit `0db5e0e`. App-baslinjen efter PR #28 är commit `92e67d1`.
+Underlaget består av versionshanterad konfiguration, PR:er/issues samt kontroller via GitHub, SSH och Kubernetes. Infra-baslinjen är `origin/main`, commit `46b5846`. App-baslinjen efter PR #28 är commit `92e67d1`.
 
 Status anges som:
 
@@ -69,10 +70,10 @@ TLS för Headscale termineras på instructor-proxy. Avsaknad av nginx eller port
 | Loggning | VPC Flow Logs i kod, PR #55 | Insamling, retention och larmleverans behöver verifieras |
 | Signering och SBOM | App-repots PR #11 och #13 inför signering och SBOM-attestering | Signatur betyder inte att imagen saknar sårbarheter |
 | Appkonton | PR #24 kontrollerar `enabled` även när en befintlig session laddas | Administrativ process för att avaktivera konton behöver dokumenteras |
-| App-deployment | PR #24 kräver godkända tester före deploy-jobbet; 22 tester passerade | Separat GitHub-ruleset för app-repot bör fortfarande övervägas |
+| App-deployment | PR #24 kräver godkända tester före deploy-jobbet; 22 tester passerade. Den 3 november aktiverades ruleset `Protect main` med PR-krav, en granskare och kontrollen `tests` | Ny deploy efter organisationsflytten återstår att verifiera |
 | Containerhärdning | PR #27: UID/GID 10001, `RuntimeDefault` seccomp, alla capabilities borttagna, privilege escalation nekad och service-account-token avstängd | NetworkPolicy saknas fortfarande |
 | Drift | Headscale `active`, tre noder online; company-website `1/1` och `/healthz` frisk den 12 oktober | Ögonblicksbild, inte tillgänglighetsmätning |
-| Scanner | PR #25–#28: verifierad attestering, Trivy `0.75.0`, separat administration och tidsbegränsad riskacceptans | Tredjeparts-SBOM kan påverka träffsäkerheten; 43 Debian-paketträffar kvarstår |
+| Scanner | PR #25–#28: verifierad attestering, Trivy `0.75.0`, separat administration och tidsbegränsad riskacceptans | Tredjeparts-SBOM kan påverka träffsäkerheten; lokal ombyggnad den 3 november gav 44 Debian-paketträffar |
 | Larmväg | Grönt larm och separat rött testlarm levererades; testjobbet avslutades `Complete` | Testlarm bevisar leverans, inte upptäckt av ett verkligt intrång |
 
 Scanner-schemat är `0 12 * * *` utan explicit tidszon. Anta inte att detta betyder klockan 12 svensk tid; välj och dokumentera önskad tidszon.
@@ -105,6 +106,8 @@ Bedömningarna är kvalitativa och relativa till labbmiljön, inte CVSS-poäng.
 
 **Prioritet: Låg efter åtgärd.** PR #62 tog bort `continue-on-error` för TFLint och satte Checkov `soft_fail: false`. Kontrollerna blockerar därmed PR:n när de hittar ett icke-undantaget fel.
 
+App-repots `main` skyddas sedan den 3 november av ett aktivt ruleset som kräver PR, en godkännande granskare och kontrollen `tests` samt blockerar force-push och radering.
+
 **Restrisk:** undantag kan dölja relevanta fynd om motiveringen blir inaktuell. Granska undantagen regelbundet och verifiera skyddet med ett avsiktligt fel i en test-PR.
 
 ### B04 – Appens deploy-identitet behöver begränsas
@@ -125,7 +128,7 @@ Bedömningarna är kvalitativa och relativa till labbmiljön, inte CVSS-poäng.
 
 ### B06 – Kvarvarande begränsningar i scannerresultatet
 
-**Uppdatering 12 oktober:** den ursprungliga imagen hade 48 High-träffar och 0 Critical. PR #26 tog bort fyra Python-träffar och PR #27 tog bort en oanvänd biblioteksträff. Aktuell CI-skanning visar 43 High och 0 Critical, motsvarande åtta unika granskade CVE:er. Produktionsdeployment, hälsa och scannerjobb är verifierade. Imagen är inte sårbarhetsfri.
+**Uppdatering 3 november:** den ursprungliga imagen hade 48 High-träffar och 0 Critical. PR #26 tog bort fyra Python-träffar och PR #27 tog bort en oanvänd biblioteksträff. En nybyggd image från aktuell basimage gav 44 High och 0 Critical, motsvarande nio unika granskade CVE:er. Ökningen beror på det nya CVE-2026-119373 i `libsqlite3-0`. Imagen är inte sårbarhetsfri.
 
 **Prioritet: Låg efter åtgärd.** Den tidigare konfigurationen använde `--ignore-unfixed`, litade på en nedladdad attestering utan verifiering och hämtade Trivys installationsskript från `main`. Detta åtgärdades i PR #25: attesteringen verifieras mot GitHub OIDC, Trivy är låst till `0.75.0` och ofixade fynd inkluderas.
 
@@ -143,11 +146,11 @@ Bedömningarna är kvalitativa och relativa till labbmiljön, inte CVSS-poäng.
 
 ## 6. Incidenter och lärdomar
 
-### Paketvis bedömning av 43 High-träffar, 10–12 oktober
+### Paketvis bedömning av 44 High-träffar, senast omprövad 3 november
 
-**Verifierad härdning:** [PR #27](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/27) är mergad och [deployment 38042577862](https://github.com/Kurs6-Projekt/Team3-ThaCompany/actions/runs/38042577862) lyckades. Appen kör som UID/GID 10001 med borttagen service-account-token, drop ALL capabilities, nekad privilege escalation och RuntimeDefault seccomp. Endast libncursesw6 togs bort, inte essentiella Debian-paket. Två konsistenta SQLite-backuper skapades på datavolymen innan ägarskapet ändrades. Efter deployment verifierades `uid 10001`, saknad token, databasläsning/skrivning, `1/1 Ready` och frisk `/healthz`.
+**Verifierad härdning:** [PR #27](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/27) är mergad och [deployment 38042577862](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/38042577862) lyckades. Appen kör som UID/GID 10001 med borttagen service-account-token, drop ALL capabilities, nekad privilege escalation och RuntimeDefault seccomp. Endast libncursesw6 togs bort, inte essentiella Debian-paket. Två konsistenta SQLite-backuper skapades på datavolymen innan ägarskapet ändrades. Efter deployment verifierades `uid 10001`, saknad token, databasläsning/skrivning, `1/1 Ready` och frisk `/healthz`.
 
-Underlag: CI-run `38039546822`, runtime-kontroll på appcontainern och Debian Security Tracker. De 43 aktuella träffarna motsvarar **8 unika CVE:er**, inte 43 separata säkerhetshål.
+Underlag: CI-run `38039546822`, runtime-kontroll på appcontainern och lokal Trivy-skanning av en nybyggd image den 3 november. De 44 aktuella träffarna motsvarar **9 unika CVE:er**, inte 44 separata säkerhetshål.
 
 | Källpaket | Träffar | Bedömning och nästa åtgärd |
 | --- | ---: | --- |
@@ -156,20 +159,21 @@ Underlag: CI-run `38039546822`, runtime-kontroll på appcontainern och Debian Se
 | systemd | 2 | CVE-2026-16742 gäller systemd-homed, som saknas i appcontainern enligt runtime-kontroll. Behåll fyndet synligt men dokumentera den saknade komponenten. |
 | perl | 1 | CVE-2026-9538 gäller Archive::Tar. `perl -MArchive::Tar -e 1` bekräftade att modulen saknas. Inte en verifierad exploaterbar kodväg i appcontainern. |
 | acl | 1 | CVE-2026-54369 gäller privilegierade ACL-operationer via manipulerade sökvägar. libacl1 krävs av basverktyg; ingen exploaterbar appkodväg verifierad. |
+| sqlite3 | 1 | CVE-2026-119373 gäller en FTS5-tabell med särskild konfiguration och negativa rowid-värden. Appen skapar inga FTS5-tabeller och exponerar inte användarstyrd SQL; kodvägen är inte verifierat nåbar. |
 
 `apt-get -s purge` (endast simulering) nekade borttagning av de berörda paketen på grund av beroenden från bland annat coreutils, bash, apt och util-linux. Att tvinga bort dem eller blanda stable med unstable är inte en verifierad säker åtgärd.
 
 **Rekommenderat:** utvärdera en ännu mindre runtime-image och bevaka Trixies säkerhetsuppdateringar. Non-root och capability-begränsning är redan applicerade. Att minska scannerantalet är inte i sig bevis på minskad exploaterbarhet.
 
-**Larmhantering:** [app-PR #28](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/28) inför exakta undantag för de åtta granskade CVE:erna. Undantagen upphör `2026-11-10` och innehåller motivering. Den fullständiga rapporten skapas fortfarande, medan Discord endast ger rött larm för nya eller ej accepterade High/Critical-fynd och visar antalet accepterade paketträffar. Verifieringsjobbet `sbom-vulnerability-scanner-risk-acceptance-20261010` blev `Complete`; webhook-anropet är felblockerande. De 43 träffarna är riskaccepterade, inte åtgärdade eller borttagna.
+**Larmhantering:** [app-PR #28](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/28) införde exakta, tidsbegränsade undantag. Efter omprövningen den 3 november innehåller konfigurationen nio exakta CVE-undantag med slutdatum `2026-11-20`. Den nya konfigurationen måste fortfarande mergas och appliceras. Den fullständiga rapporten skapas fortfarande, medan Discord endast ger rött larm för nya eller ej accepterade High/Critical-fynd och visar antalet accepterade paketträffar. De 44 träffarna är riskaccepterade, inte åtgärdade eller borttagna.
 
-Källor: [util-linux](https://security-tracker.debian.org/tracker/CVE-2026-76642), [nsenter](https://security-tracker.debian.org/tracker/CVE-2026-78408), [subdir mount](https://security-tracker.debian.org/tracker/CVE-2026-78409), [bind mount](https://security-tracker.debian.org/tracker/CVE-2026-78410), [ncurses](https://security-tracker.debian.org/tracker/CVE-2025-69720), [systemd](https://security-tracker.debian.org/tracker/CVE-2026-16742), [Perl](https://security-tracker.debian.org/tracker/CVE-2026-9538), [ACL](https://security-tracker.debian.org/tracker/CVE-2026-54369).
+Källor: [util-linux](https://security-tracker.debian.org/tracker/CVE-2026-76642), [nsenter](https://security-tracker.debian.org/tracker/CVE-2026-78408), [subdir mount](https://security-tracker.debian.org/tracker/CVE-2026-78409), [bind mount](https://security-tracker.debian.org/tracker/CVE-2026-78410), [ncurses](https://security-tracker.debian.org/tracker/CVE-2025-69720), [systemd](https://security-tracker.debian.org/tracker/CVE-2026-16742), [Perl](https://security-tracker.debian.org/tracker/CVE-2026-9538), [ACL](https://security-tracker.debian.org/tracker/CVE-2026-54369), [SQLite FTS5](https://nvd.nist.gov/vuln/detail/CVE-2026-119373).
 
 ### Verifierad appuppdatering 10 oktober
 
 Post-deploy-jobbet `sbom-vulnerability-scanner-postdeploy-20261010` avslutades `Complete` efter 66 sekunder. Verifieringsjobbet efter riskacceptansen avslutades också `Complete` och webhook-anropet var felblockerande.
 
-[PR #26](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/26) är mergad. [Deployment 38038431812](https://github.com/Kurs6-Projekt/Team3-ThaCompany/actions/runs/38038431812) lyckades efter omkörning av ett tillfälligt BuildKit-pullfel. Appen är `1/1 Ready`, `/healthz` svarar `healthy` och `db: connected`. Runtime-kontroll bekräftar att pip inte finns installerat. SSH via jumphosten till primary fungerar efter ändringen. Ingen Headscale-nyckel eller OS Login-behörighet ändrades.
+[PR #26](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/26) är mergad. [Deployment 38038431812](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/38038431812) lyckades efter omkörning av ett tillfälligt BuildKit-pullfel. Appen är `1/1 Ready`, `/healthz` svarar `healthy` och `db: connected`. Runtime-kontroll bekräftar att pip inte finns installerat. SSH via jumphosten till primary fungerar efter ändringen. Ingen Headscale-nyckel eller OS Login-behörighet ändrades.
 
 ### Secure Boot: VM startad men operativsystemet startade inte
 
@@ -188,6 +192,14 @@ Lärdom: behandla databas och servernycklar som kritiskt beständigt tillstånd.
 Den 12 oktober löstes `spectre.itsx25.chas-lab.dev` till den publika adressen och gav `403`, medan samma hostname mot interna `10.0.0.2` gav `200`. Headscale hade återgått till `base_domain: example.com`, en felaktig split-DNS-regel och tomma extra records. Konfigurationen säkerhetskopierades, validerades med `headscale configtest` och korrigerades till `team3.arpa` med explicita poster för Spectre och company-website. Tjänsten laddades om utan att noder eller serveridentitet ersattes.
 
 Lärdom: live-konfiguration som inte finns i Git/Terraform riskerar att förloras vid VM-ersättning. Klienterna måste dessutom välja `accept-dns=true`; serverkonfiguration ensam ändrar inte klientens DNS-policy.
+
+### Flytt till ITSX25-Chas och Comerits GCP-miljö
+
+Repot överfördes till organisationen `ITSX25-Chas`. Terraform-backenden pekades om till `itsx25-comerit-team3-tfstate`, projektvariabeln till `itsx25-comerit` och GitHub Actions använder teamets Workload Identity Provider och CI/CD-servicekonto. Kod som försökte aktivera det centralt hanterade IAP-API:t togs bort, eftersom teamets CI-konto avsiktligt saknar den projektbehörigheten. Tidigare utbildare togs bort ur OS Login-konfigurationen.
+
+Deploykörning [40937737808](https://github.com/ITSX25-Chas/team3-blueteam/actions/runs/40937737808) lyckades på `main` den 29 oktober. Det verifierar att aktuell Terraform-kod kunde autentisera, planera och applicera i Comerits projekt. Det bevisar däremot inte ensamt att manuellt installerad Headscale-data eller alla driftloggar är återställningsbara. Dessa kvarstår som separata risker.
+
+Lärdom: flytten minskade personberoendet för moln- och repoägarskap, men visade också varför tillstånd, externa variabler och centralt förvaltade API:er måste skiljas från resurser som teamets pipeline själv äger.
 
 ## 7. Loggning och detektion
 
@@ -214,19 +226,28 @@ Flödet testades delvis genom rött leveranstest, scannerlarm, återställning a
 
 ## 8. MITRE ATT&CK och Threat Intelligence
 
-Mappningen nedan beskriver möjliga angreppssätt, inte observerade attacker mot teamet.
+MITRE ATT&CK ordnar angripares beteenden i **taktiker** (varför ett steg görs), **tekniker** (hur det görs) och undertekniker. En följd av sådana arbetssätt brukar beskrivas som TTP:er: tactics, techniques and procedures. Teamet använder mappningen för att koppla tekniska brister till en möjlig hotbild, välja loggning och prioritera åtgärder. Mappningen nedan beskriver möjliga angreppssätt, inte observerade attacker mot teamet.
 
 | Risk | Relevant teknik | Koppling till miljön |
 |---|---|---|
+| B01 | T1489 – Service Stop | Förlust eller avstängning av Headscale kan bryta klient- och deployåtkomst. Bristen är främst en driftrisk, men effekten motsvarar teknikens tillgänglighetspåverkan. |
 | B02 | T1078.004 – Valid Accounts: Cloud Accounts | Missbruk av en giltig molnidentitet kan utnyttja dess breda rättigheter |
-| B04 | T1552.001 – Unsecured Credentials: Credentials In Files | Token eller kubeconfig som exponeras i filer kan ge åtkomst |
-| B04–B05 | T1610 – Deploy Container | En komprometterad identitet med pod-skapande kan användas för en oönskad container |
+| B03 | T1562.001 – Impair Defenses: Disable or Modify Tools | Felaktiga undantag eller försvagade CI-kontroller kan göra att säkerhetsfel passerar utan att blockeras. |
+| B04 | T1552.001 – Unsecured Credentials: Credentials In Files | En komprometterad deployidentitet kan läsa applikationshemligheter och använda dem för fortsatt åtkomst. |
+| B04 | T1610 – Deploy Container | Rättigheten att skapa pods kan missbrukas för att starta en oönskad container. |
+| B05 | T1046 – Network Service Discovery | Avsaknad av NetworkPolicy underlättar kartläggning av nåbara tjänster efter en containerkompromettering. |
+| B06 | T1195.001 – Supply Chain Compromise: Compromise Software Dependencies and Development Tools | Sårbara eller manipulerade beroenden kan följa med in i den byggda imagen. Signering, SBOM och skanning minskar men tar inte bort risken. |
+| B07 | T1530 – Data from Cloud Storage | Otillräckligt skyddad Terraform-state i Cloud Storage kan röja infrastrukturdata och känsliga värden. |
+
+Mappningen används även operativt. T1078.004 motiverar larm på ovanliga molninloggningar och IAM-ändringar. T1610 motiverar loggning av oväntade pod-skapanden. T1530 motiverar granskning av bucketåtkomst. T1195.001 motiverar SBOM, signerade images och blockerande pipelinekontroller. Därmed blir ATT&CK en länk mellan hotanalys, förebyggande skydd och detektion, inte bara en etikett i rapporten.
 
 MITRE beskriver verkliga exempel på missbruk av molnkonton, bland annat kopplade till APT29. Det gör identitetsbegränsning relevant även när inga lösenord finns i Terraform. Det innebär inte att teamet har utsatts av denna aktör. [MITRE T1078.004](https://attack.mitre.org/techniques/T1078/004/)
 
 MITRE beskriver också containerdeployment i angrepp, bland annat med Kinsing. För teamet motiverar detta begränsad deploy-RBAC och isolering, men ingen sådan aktivitet har belagts här. [MITRE T1610](https://attack.mitre.org/techniques/T1610/)
 
 Filer med autentiseringsuppgifter är en etablerad åtkomstväg. Därför ska tokenhantering och backupskydd ingå i Blue Team-arbetet. [MITRE T1552.001](https://attack.mitre.org/techniques/T1552/001/)
+
+Övriga teknikreferenser: [T1489](https://attack.mitre.org/techniques/T1489/), [T1562.001](https://attack.mitre.org/techniques/T1562/001/), [T1046](https://attack.mitre.org/techniques/T1046/), [T1195.001](https://attack.mitre.org/techniques/T1195/001/) och [T1530](https://attack.mitre.org/techniques/T1530/).
 
 **Tillförlitlighet:** miljöobservationer från den 12 oktober har starkast stöd för nuläget. Tidigare kontroller kan ha förändrats. Angreppskopplingarna är analytiska hypoteser. Inga egna indikatorer på intrång eller angriparattribution presenteras.
 
@@ -288,7 +309,7 @@ git shortlog -sne --all
 git log --author="NAMN_ELLER_EPOST" --oneline --all
 ```
 
-För Andre finns exempelvis spårbara commits för OS Login på primary (`0e6b150`), VPC Flow Logs (`d2a91fb`), GitHub-runner-ACL (`41c066e`), blockerande CI/WIF (`f8feff5`, `037a16d`, `6e85d55`) samt appens SBOM/Cosign, scannerhärdning och non-root-arbete i app-repot. Den separata individuella redogörelsen sammanfattar dessa utan att ersätta Git-historiken.
+För **Andre Edvardsson** finns exempelvis spårbara commits för OS Login på primary (`0e6b150`), VPC Flow Logs (`d2a91fb`), GitHub-runner-ACL (`41c066e`), blockerande CI/WIF (`f8feff5`, `037a16d`, `6e85d55`) samt appens SBOM/Cosign, scannerhärdning och non-root-arbete i app-repot. Den separata individuella redogörelsen sammanfattar dessa utan att ersätta Git-historiken.
 
 ## 13. Föreslagen åtgärdsplan
 
@@ -302,19 +323,19 @@ Tiderna är förslag från rapportdatum, inte beslutade leveranslöften.
 | Inom en vecka | Minska kvarvarande deploy-RBAC i `default` och utred kortlivad Kubernetes-identitet | CI/Kubernetes-ansvarig | Deployment fungerar utan onödiga pod-/secret-rättigheter |
 | Inom två veckor | Inför och testa container-/nätverksisolering | Kubernetes-ansvarig | App fungerar; otillåten testtrafik blockeras |
 | Inom två veckor | Bygg checksummeverifierad scannerimage och dokumentera larmhantering | Övervakningsansvarig | Samma scannerartefakt används reproducerbart och larm får ägare |
-| Före miljöbytet | Spegla repon och inventera Actions-secrets, variables, packages, WIF, Terraform-state och administratörer | Repoägare och infrastrukturansvarig | Ny GitHub-organisation och nytt GCP-projekt fungerar utan att gamla miljön först raderas |
+| Efter miljöbytet | Verifiera Actions-variabler, WIF, Terraform-state, OS Login, Headscale-state och ägare i den nya miljön | Repoägare och infrastrukturansvarig | Deploy är grön, rätt personer kommer in och dokumenterat tillstånd kan återställas |
 | Efter varje större ändring | Uppdatera evidens och riskacceptans | Hela gruppen | Rapport, issues och verklig konfiguration överensstämmer |
 
 ## 14. Evidens och referenser
 
-Infra: [repository](https://github.com/Kurs6-Projekt/team3-blueteam), [baslinje 0db5e0e](https://github.com/Kurs6-Projekt/team3-blueteam/tree/0db5e0e).
+Infra: [repository](https://github.com/ITSX25-Chas/team3-blueteam), [aktuell baslinje 46b5846](https://github.com/ITSX25-Chas/team3-blueteam/tree/46b5846).
 
-- [PR #49: ACL](https://github.com/Kurs6-Projekt/team3-blueteam/pull/49), [#50: gamla SSH-nycklar](https://github.com/Kurs6-Projekt/team3-blueteam/pull/50), [#54: OS Login primary](https://github.com/Kurs6-Projekt/team3-blueteam/pull/54).
-- [PR #53: runner-ACL](https://github.com/Kurs6-Projekt/team3-blueteam/pull/53), [#55: Flow Logs](https://github.com/Kurs6-Projekt/team3-blueteam/pull/55), [#57: CI-roll](https://github.com/Kurs6-Projekt/team3-blueteam/pull/57).
-- [PR #60: state-bucket](https://github.com/Kurs6-Projekt/team3-blueteam/pull/60), [issue #12](https://github.com/Kurs6-Projekt/team3-blueteam/issues/12), [PR #62: CI- och WIF-hardening](https://github.com/Kurs6-Projekt/team3-blueteam/pull/62), [infra-pipeline 37777508119](https://github.com/Kurs6-Projekt/team3-blueteam/actions/runs/37777508119).
-- [Issue #32: Secure Boot](https://github.com/Kurs6-Projekt/team3-blueteam/issues/32), [PR #61: zonflytt](https://github.com/Kurs6-Projekt/team3-blueteam/pull/61), [körning 36853609140](https://github.com/Kurs6-Projekt/team3-blueteam/actions/runs/36853609140).
-- App: [PR #11: Cosign](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/11), [#13: SBOM](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/13), [#20: beroenden](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/20), [#24: sessioner och deploykontroller](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/24), [#25: härdad scanner](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/25), [#26: scannerisolering och basimage](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/26), [#27: non-root](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/27), [#28: tidsbegränsad riskacceptans](https://github.com/Kurs6-Projekt/Team3-ThaCompany/pull/28).
-- [App-pipeline 38042577862](https://github.com/Kurs6-Projekt/Team3-ThaCompany/actions/runs/38042577862): non-root-image, tester, SBOM, signering och deployment passerade. [Pipeline 38055948795](https://github.com/Kurs6-Projekt/Team3-ThaCompany/actions/runs/38055948795) verifierade slutläget efter PR #28.
+- [PR #49: ACL](https://github.com/ITSX25-Chas/team3-blueteam/pull/49), [#50: gamla SSH-nycklar](https://github.com/ITSX25-Chas/team3-blueteam/pull/50), [#54: OS Login primary](https://github.com/ITSX25-Chas/team3-blueteam/pull/54).
+- [PR #53: runner-ACL](https://github.com/ITSX25-Chas/team3-blueteam/pull/53), [#55: Flow Logs](https://github.com/ITSX25-Chas/team3-blueteam/pull/55), [#57: CI-roll](https://github.com/ITSX25-Chas/team3-blueteam/pull/57).
+- [PR #60: state-bucket](https://github.com/ITSX25-Chas/team3-blueteam/pull/60), [issue #12](https://github.com/ITSX25-Chas/team3-blueteam/issues/12), [PR #62: CI- och WIF-hardening](https://github.com/ITSX25-Chas/team3-blueteam/pull/62), [infra-pipeline 37777508119](https://github.com/ITSX25-Chas/team3-blueteam/actions/runs/37777508119).
+- [Issue #32: Secure Boot](https://github.com/ITSX25-Chas/team3-blueteam/issues/32), [PR #61: zonflytt](https://github.com/ITSX25-Chas/team3-blueteam/pull/61), [körning 36853609140](https://github.com/ITSX25-Chas/team3-blueteam/actions/runs/36853609140).
+- App: [PR #11: Cosign](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/11), [#13: SBOM](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/13), [#20: beroenden](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/20), [#24: sessioner och deploykontroller](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/24), [#25: härdad scanner](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/25), [#26: scannerisolering och basimage](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/26), [#27: non-root](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/27), [#28: tidsbegränsad riskacceptans](https://github.com/ITSX25-Chas/Team3-ThaCompany/pull/28).
+- [App-pipeline 38042577862](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/38042577862): non-root-image, tester, SBOM, signering och deployment passerade. [Pipeline 38055948795](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/38055948795) verifierade slutläget efter PR #28.
 
 Kontroller den 8–12 oktober: GitHub effective rules för `main`, `systemctl is-active headscale`, `headscale configtest`, `findmnt -T /var/lib/headscale`, interna och publika DNS-/HTTP-test, `kubectl get deploy`, scannerjobb, `kubectl get networkpolicy -A` samt RBAC-test med `kubectl auth can-i`. Råloggar innehåller inga hemligheter i rapporten; relevanta jobbnamn och pipeline-ID finns ovan för spårbarhet.
 
