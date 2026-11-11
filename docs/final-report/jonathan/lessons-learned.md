@@ -52,15 +52,15 @@ Gör ett återställningstest på en separat VM. Det räknas som klart när klie
 
 ### Observation
 
-Den 15 september aktiverades Headscale-ACL:n utan en regel som släppte igenom SSH till jumphosten. Publik SSH var redan begränsad och vi hade inte IAP-behörighet, så vi blev utelåsta. Jag löste det med en hotfix som öppnade SSH från min egen publika IP ([PR #43](https://github.com/ITSX25-Chas/team3-blueteam/pull/43)). I commiten skrev jag att den skulle tas bort så fort det gick, men IP-adressen ligger fortfarande kvar i `terraform.tfvars.example` på `main`.
+Den 15 september aktiverades Headscale-ACL:n utan en regel som släppte igenom SSH till jumphosten. Publik SSH var redan begränsad och vi hade inte IAP-behörighet, så vi blev utelåsta. Jag löste det med en hotfix som öppnade SSH från min egen publika IP ([PR #43](https://github.com/ITSX25-Chas/team3-blueteam/pull/43)). I commiten skrev jag att den skulle tas bort så fort det gick, men IP-adressen ligger fortfarande kvar i `terraform.tfvars.example` på `main`. Det är den filen CI använder vid deploy, så enligt koden är regeln fortfarande aktiv i brandväggen. Det har jag inte kontrollerat i GCP.
 
 ### Orsak
 
-ACL:n testades inte mot alla vägar in innan den aktiverades, och det fanns ingen reservväg om något gick fel. Mitt tillfälliga undantag hade ingen ägare, inget slutdatum och ingen issue som påminde om att det skulle bort.
+ACL:n testades inte mot alla vägar in innan den aktiverades, och det fanns ingen reservväg om något gick fel. Mitt tillfälliga undantag hade ingen ägare, inget slutdatum och ingen issue som påminde om att det skulle bort. Att CI läser en fil som heter `example` gjorde det också lätt att tro att den inte gällde på riktigt.
 
 ### Konsekvens
 
-Teamet kom inte åt jumphosten förrän hotfixen var på plats. Undantaget löste problemet men lämnade en öppning som ingen följde upp, och min IP-adress syns i ett publikt repo.
+Teamet kom inte åt jumphosten förrän hotfixen var på plats. Undantaget löste problemet men lämnade en öppning som ingen följde upp. SSH kan fortfarande nås från en adress som inte behövs längre, och min IP-adress syns i ett publikt repo och i Git-historiken.
 
 ### Förbättring
 
@@ -68,7 +68,7 @@ Testa en ny ACL från varje roll innan den aktiveras och se till att det finns e
 
 ### Uppföljning
 
-Kontrollera att den tillfälliga regeln är borttagen i den riktiga konfigurationen och ta bort IP-adressen ur exempelfilen. Inför nästa ACL-ändring ska testresultatet från varje roll finnas med i PR:en.
+Ta bort adressen i en egen PR, läs `terraform plan` och kontrollera sedan i GCP att brandväggsregeln är uppdaterad och att ingen förlorat åtkomst de behöver. Inför nästa ACL-ändring ska testresultatet från varje roll finnas med i PR:en.
 
 ---
 
