@@ -6,7 +6,7 @@
 
 **Projekt:** Team 3 Blue Team, hösten 2026
 
-**Datum:** 2026-11-11
+**Datum:** 2026-11-13
 
 **Underlag:** Dokumenterad projektstatus till och med 3 november 2026, kompletterad med PR-historik hämtad 11 november 2026
 
@@ -27,7 +27,7 @@
 | Åtgärd vid avvikelse | Ta bort eller begränsa behörigheten via PR, kontrollera i Audit Logs om den använts och uppdatera listan över behov. |
 | Evidens | Commit `4d1344e` och `cc0aa6b` (OS Login och admin-roll på instansnivå), PR #65 (borttagen instruktörsåtkomst), PR #70 (sudo för teamet), säkerhetsrapporten avsnitt 4 och risk B02. |
 
-**Egen motivering:** Jag byggde OS Login-lösningen och valde att tilldela admin-rollen på instansnivå, så att en administratör bara når den server som behövs. Det minskar konsekvensen om ett konto komprometteras. Samtidigt visar KPI:n att alla fem i teamet nu har sudo. Det var praktiskt under projektet, men i en verklig organisation behöver de flesta troligen bara vanlig inloggning. Att instruktörens åtkomst fick upptäckas manuellt (PR #65) visar varför siffran behöver följas upp regelbundet. KPI:n visar också att den största behörigheten inte ligger hos en person utan hos CI-tjänstekontot, som har `roles/compute.admin` på hela projektet. Ett komprometterat pipelineflöde kan därför påverka fler resurser än en enskild administratör. En begränsning är att KPI:n visar vem som *kan* göra ändringar, inte om behörigheten faktiskt missbrukas; det kräver loggar.
+**Egen motivering:** Jag byggde OS Login-lösningen och valde att tilldela admin-rollen på instansnivå, så att en administratör bara når den server som behövs. Det minskar konsekvensen om ett konto komprometteras. Samtidigt visar KPI:n att alla fem i teamet nu har sudo. Det var praktiskt under projektet, men i en verklig organisation behöver de flesta troligen bara vanlig inloggning. Att instruktörens åtkomst togs bort först vid miljöbytet (PR #65), och inte när rollen upphörde, visar varför siffran behöver följas upp regelbundet. KPI:n visar också att den största behörigheten inte ligger hos en person utan hos CI-tjänstekontot, som har `roles/compute.admin` på hela projektet. Ett komprometterat pipelineflöde kan därför påverka fler resurser än en enskild administratör. En begränsning är att KPI:n visar vem som *kan* göra ändringar, inte om behörigheten faktiskt missbrukas; det kräver loggar.
 
 ## KPI 2 – Andel ändringar via granskning och CI
 
@@ -39,12 +39,12 @@
 | Datakälla | GitHub (PR-historik, granskningar, Actions-körningar och ruleset för `main`). |
 | Mottagare | IT-chef och ledningsgrupp. |
 | Frekvens | Månadsvis. |
-| Nuläge | 18 av 18 mergade PR:er sedan PR #62 (8 oktober) har godkänd granskning och godkända kontroller: 100 %. Kravet sänktes från två till ett godkännande när teamet gick över till rapportskrivning. Infra-repots `main` skyddas av ett aktivt GitHub-ruleset som kräver granskning och kontrollen Format & Validate samt blockerar force-push och radering, så direkta pushar förhindras. Eventuella bypass-aktörer är inte granskade. |
-| Mål | 100 %, två godkännanden för infrastrukturändringar och granskade bypass-aktörer i rulesetet. |
+| Nuläge | 18 av 18 mergade PR:er sedan PR #62 (8 oktober) har godkänd granskning och godkända kontroller: 100 %. Infra-repots `main` skyddas av ett aktivt GitHub-ruleset som kräver granskning och kontrollen Format & Validate samt blockerar force-push och radering, så direkta pushar förhindras. Eventuella bypass-aktörer är inte granskade. |
+| Mål | 100 % och granskade bypass-aktörer i rulesetet. |
 | Åtgärd vid avvikelse | Granska ändringen i efterhand, kontrollera att `plan` och faktisk miljö stämmer och skärp rulesetet. |
 | Evidens | PR #62 (TFLint och Checkov blockerande i stället för `soft_fail`, GitHub OIDC begränsad till `main`), lista över mergade PR:er sedan 2026-10-08, säkerhetsrapporten avsnitt 4 (aktivt ruleset). |
 
-**Egen motivering:** Eftersom hela miljön är definierad i Terraform blir en okontrollerad ändring i repot en okontrollerad ändring i molnet. Mina egna ändringar, till exempel OS Login, kontrollerades på detta sätt innan de applicerades, och jag mergade själv PR #62. KPI:n visar också en svaghet: när granskningskravet sänktes från två till ett godkännande blev andelen fortfarande 100 %. En kontroll kan alltså försvagas utan att siffran märker det, och därför ska KPI:n alltid rapporteras tillsammans med vilket granskningskrav som gällde. Den fångar inte heller ändringar som görs direkt i GCP-konsolen.
+**Egen motivering:** Eftersom hela miljön är definierad i Terraform blir en okontrollerad ändring i repot en okontrollerad ändring i molnet. Mina egna ändringar, till exempel OS Login, kontrollerades på detta sätt innan de applicerades. KPI:n har också en svaghet: andelen blir 100 % oavsett hur strängt granskningskravet är. En kontroll kan alltså försvagas utan att siffran märker det, och därför ska KPI:n alltid rapporteras tillsammans med vilket granskningskrav som gällde. Den fångar inte heller ändringar som görs direkt i GCP-konsolen.
 
 ## KPI 3 – Filer med känslig konfiguration i Git
 
@@ -68,14 +68,14 @@
 | KPI | Nuläge | Mål | Ledningssignal |
 |---|---:|---:|---|
 | Konton med administratörsbehörighet | 5 + 1 | Endast dokumenterade behov | Teamet har sudo på enskilda servrar; CI-kontot har bred behörighet i hela projektet |
-| Ändringar via granskning och CI | 100 % (18/18) | 100 % | Alla ändringar granskas, men kravet har sänkts från två till ett godkännande |
+| Ändringar via granskning och CI | 100 % (18/18) | 100 % | Alla ändringar granskas och passerar blockerande kontroller |
 | Filer med känslig konfiguration i Git | 1 | 0 | Känd risk där åtgärden har påbörjats |
 
-Jag valde just dessa tre KPI:er eftersom de bygger på mitt eget arbete och tillsammans visar **hur väl vi kontrollerar åtkomsten till vår miljö**. KPI 1 visar *vem* som kan göra stora ändringar. KPI 2 visar *hur* ändringar görs. KPI 3 visar om *nycklarna* till miljön ligger säkert. En icke-teknisk beslutsfattare behöver inte förstå Terraform eller IAM för att förstå frågorna "hur många kan göra allt?", "följer alla ändringar våra regler?" och "ligger känsliga uppgifter öppet?".
+Jag valde just dessa tre KPI:er eftersom de bygger på mitt eget arbete och tillsammans visar **hur väl vi kontrollerar åtkomsten till vår miljö**. De följer också upp lärdomarna i mitt post-mortem ([`lessons-learned.md`](lessons-learned.md)), där en tidigare instruktörs åtkomst låg kvar efter att rollen upphört. KPI 1 visar *vem* som kan göra stora ändringar. KPI 2 visar *hur* ändringar görs. KPI 3 visar om *nycklarna* till miljön ligger säkert. En icke-teknisk beslutsfattare behöver inte förstå Terraform eller IAM för att förstå frågorna "hur många kan göra allt?", "följer alla ändringar våra regler?" och "ligger känsliga uppgifter öppet?".
 
-**Trend att uppmärksamma:** Utvecklingen går åt rätt håll. Admin-åtkomsten är begränsad till enskilda servrar, kontrollerna har varit blockerande sedan PR #62 och flytten av variabler ur Git har påbörjats. Det finns ett undantag: kravet på granskning sänktes från två till ett godkännande. Det bör återställas innan nya infrastrukturändringar görs. Förbättringarna har dessutom skett genom enskilda insatser och inte genom fasta rutiner.
+**Trend att uppmärksamma:** Utvecklingen går åt rätt håll. Admin-åtkomsten är begränsad till enskilda servrar, kontrollerna har varit blockerande sedan PR #62 och flytten av variabler ur Git har påbörjats. Förbättringarna har dessutom skett genom enskilda insatser och inte genom fasta rutiner.
 
-**Beslut som KPI:erna stödjer:** De stödjer tre beslut. Det första är att införa kvartalsvis behörighetsgranskning med en namngiven ägare och begränsa CI-kontots projektomfattande roll. Det andra är att återinföra två godkännanden och granska rulesetets bypass-aktörer. Det tredje är att avsätta tid för att flytta alla variabler till en hemlighetshanterare.
+**Beslut som KPI:erna stödjer:** De stödjer tre beslut. Det första är att införa kvartalsvis behörighetsgranskning med en namngiven ägare och begränsa CI-kontots projektomfattande roll. Det andra är att granska rulesetets bypass-aktörer. Det tredje är att avsätta tid för att flytta alla variabler till en hemlighetshanterare.
 
 **Vad KPI:erna inte visar:** De mäter förebyggande kontroll, inte om ett angrepp faktiskt upptäcks. De fångar inte heller ändringar som görs direkt i molnkonsolen. Som komplement behövs lagets detektions-KPI, Red Team-post-mortem och en regelbunden kontroll av att koden och den verkliga miljön stämmer överens.
 
