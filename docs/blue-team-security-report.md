@@ -10,7 +10,9 @@
 
 Teamet har infört OS Login, begränsade nätverksregler, identitetsbaserad CI-autentisering, imagesignering, SBOM, NetworkPolicy och återkommande sårbarhetsskanning. Efter flytten till Comerits GCP-projekt återställdes k3s på nya primary den 3 november. En ny subnet-router tog över `10.0.3.0/24`, kubeconfig roterades och appdeployment [41608640621](https://github.com/ITSX25-Chas/Team3-ThaCompany/actions/runs/41608640621) passerade tester, SBOM, Cosign, policykontroll och rollout. Slutkontrollen visade nod `Ready`, app `1/1`, aktiv NetworkPolicy, Sigstore-policy i `enforce` och HTTP 200.
 
-Sårbarhetsscannern verifierar CycloneDX-attesteringen kryptografiskt mot GitHub Actions OIDC-identitet innan innehållet skannas. Trivy är låst till version `0.75.0`. En ombyggd image skannades den 3 november: 44 High-paketträffar, nio unika CVE:er och 0 Critical. De nio granskade CVE:erna har tidsbegränsade undantag till den 20 november 2026; nya eller ej accepterade High/Critical-fynd ger fortsatt rött Discord-larm. Ett grönt larm och ett separat märkt rött testlarm har verifierat larmvägen.
+Sårbarhetsscannern verifierar CycloneDX-attesteringen kryptografiskt mot GitHub Actions OIDC-identitet innan innehållet skannas. Trivy är låst till version `0.75.0`. En ombyggd image skannades den 3 november: 44 High-paketträffar, nio unika CVE:er och 0 Critical. De nio granskade CVE:erna har tidsbegränsade undantag till den 20 november 2026. Ett grönt larm och ett separat märkt rött testlarm verifierade larmvägen i den tidigare driften.
+
+**Driftstatus 13 november:** scannerkoden och riskundantagen finns kvar i GitHub, men namespace `security-tools`, scanner-CronJobben och Discord-secreten saknas i det återställda klustret. Den dagliga skanningen och larmningen körs därför inte just nu. Senast verifierade scannerresultat är från den 3 november. Detta är en kvarstående driftbrist som behöver återställas och testas.
 
 Den tydligaste kvarvarande driftrisken är att Headscales data ligger på jumphostens startdisk. Vid en tidigare ersättning av maskinen behövde tjänsten och klientåtkomsten återställas. Infrastruktur som går att återskapa med Terraform innebär alltså inte att tjänstens identiteter, nycklar och databas automatiskt återställs.
 
@@ -74,7 +76,7 @@ TLS för Headscale termineras på instructor-proxy. Avsaknad av nginx eller port
 | App-deployment | PR #24 kräver godkända tester före deploy-jobbet. Körning `41608640621` passerade tester, imagebygge, SBOM, Cosign, Headscale, kubeconfig och rollout den 3 november | En lyckad körning är en ögonblicksbild, inte ett tillgänglighetsmått |
 | Containerhärdning | UID/GID 10001, `RuntimeDefault` seccomp, alla capabilities borttagna, privilege escalation nekad, service-account-token avstängd och NetworkPolicy aktiv | Policyn behöver regressionstestas när appens trafikbehov ändras |
 | Drift | Nya k3s-noden `Ready`; company-website `1/1`; Sigstore-policy `enforce`; ingress och HTTP 200 verifierade den 3 november | k3s och subnet-router återställs med separat procedur, inte fullständigt via Terraform |
-| Scanner | PR #25–#28: verifierad attestering, Trivy `0.75.0`, separat administration och tidsbegränsad riskacceptans | Tredjeparts-SBOM kan påverka träffsäkerheten; lokal ombyggnad den 3 november gav 44 Debian-paketträffar |
+| Scanner | PR #25–#28: verifierad attestering, Trivy `0.75.0`, separat administration och tidsbegränsad riskacceptans | Koden finns, men scanner-CronJob och Discord-secret saknades i klustret vid kontroll den 13 november; senaste verifierade skanning är från 3 november |
 | Larmväg | Grönt larm och separat rött testlarm levererades; testjobbet avslutades `Complete` | Testlarm bevisar leverans, inte upptäckt av ett verkligt intrång |
 
 Scanner-schemat är `0 12 * * *` utan explicit tidszon. Anta inte att detta betyder klockan 12 svensk tid; välj och dokumentera önskad tidszon.

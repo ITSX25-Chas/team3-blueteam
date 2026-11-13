@@ -34,7 +34,7 @@ Jag deltog i granskning av behörigheter, sårbarheter och kvarstående risker s
 |---|---|---|
 | Spårbar och begränsad åtkomst | OS Login, Flow Logs och Headscale-ACL | Commits `0e6b150`, `d2a91fb`, `41c066e` |
 | Blockerande infra-kontroller | WIF, Terraform-, TFLint- och Checkov-härdning | Commits `f8feff5`, `037a16d`, `6e85d55` |
-| Härdad leveranskedja | SBOM, Cosign, non-root, RBAC och scannerförbättringar | App-PR #24–#28 och [säkerhetsrapporten](../../blue-team-security-report.md) |
+| Härdad leveranskedja | SBOM, Cosign, non-root, RBAC och scannerförbättringar; scannerkoden finns men den dagliga CronJobben saknas i nuvarande kluster | App-PR #24–#28 och [säkerhetsrapporten](../../blue-team-security-report.md) |
 | Återställd Comerit-miljö | k3s, ingress, policy-controller, kubeconfig och route | Commits `dab93b8`, `c5c2003`, run `41608640621` |
 | Evidensbaserat post-mortem | Jämförelse av webb-, intern- och databasloggar | [Red Team-rapport, avsnitt post-mortem](../../red-team-pentest-report.md#post-mortem-detektion-och-förbättring) |
 
@@ -43,7 +43,7 @@ Jag deltog i granskning av behörigheter, sårbarheter och kvarstående risker s
 De tre KPI:erna finns definierade i [kpi.md](kpi.md):
 
 1. **Säkra deploymenter:** 24 av 30 slutförda körningar lyckades, 80 %. Målet är minst 95 % utan att säkerhetssteg tas bort.
-2. **Critical och utgångna undantag:** nuläget är 0 Critical och 0 utgångna undantag, men nio aktiva undantag måste omprövas före 20 november.
+2. **Critical och utgångna undantag:** senaste verifierade skanning den 3 november visade 0 Critical och nio tidsbegränsade undantag. Den 13 november saknades scanner-CronJobben i det nya klustret, så nuläget kan inte beskrivas som löpande verifierat förrän scannern har återställts.
 3. **Testad larmtäckning i Red Team-målmiljön:** 0 av 6 prioriterade attacksteg gav observerat larm. Målet är minst 5 av 6 och högst fem minuters MTTD för RCE, root och intern export. Detta är en separat mätning från Blue Teams gemensamma baslinje på 1 av 5 verifierade detektionstester.
 
 Jag bedömer larmtäckningen som viktigast för ledningen. Tekniska skydd och loggar har begränsat värde om organisationen inte kan upptäcka, eskalera och hantera en pågående incident.
@@ -73,7 +73,7 @@ Därför verifierade jag svar mot kod, officiell dokumentation, Git-historik och
 ### Nu – ompröva sårbarhetsundantagen
 
 **Ansvar:** Säkerhets- och applikationsansvarig.  
-**Åtgärd:** Bedöm de nio CVE-undantagen före 20 november, uppdatera image där fix finns och dokumentera nytt beslut där risk kvarstår.  
+**Åtgärd:** Återställ först scanner-CronJobben och Discord-secreten, verifiera en ny körning och bedöm därefter de nio CVE-undantagen före 20 november. Uppdatera imagen där fix finns och dokumentera nytt beslut där risk kvarstår.  
 **Mätning:** KPI 2 ska fortsatt vara 0 Critical och 0 utgångna undantag.
 
 ### Nästa steg – automatisera och öva återställningen

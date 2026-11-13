@@ -38,9 +38,9 @@
 
 ## Professionell sammanfattning
 
-Team 3 byggde en sammanhängande säkerhetslösning med Terraform, OS Login, begränsade nätverksregler, Workload Identity Federation, k3s, NetworkPolicy, non-root-container, signerade images, SBOM och återkommande sårbarhetsskanning. Den återställda miljön i Comerit verifierades genom en lyckad pipeline, körande applikation och praktiska säkerhetskontroller.
+Team 3 byggde en sammanhängande säkerhetslösning med Terraform, OS Login, begränsade nätverksregler, Workload Identity Federation, k3s, NetworkPolicy, non-root-container, signerade images, SBOM och en härdad sårbarhetsscanner. Den återställda miljön i Comerit verifierades genom en lyckad pipeline, körande applikation och praktiska säkerhetskontroller. En kontroll den 13 november visade dock att scanner-CronJobben och dess Discord-secret inte hade återställts i det nya klustret, trots att konfigurationen finns kvar i GitHub.
 
-Projektets största kvarstående risker är manuella beroenden i återställningen, långlivad Kubernetes-autentisering, nio tidsbegränsade sårbarhetsundantag och otillräckligt testad larmförmåga. Red Team-loggarna kom från en separat Acme-målmiljö, men gav en viktig generell lärdom: fyra av sex attacksteg var fullt synliga och två delvis synliga, samtidigt som inget observerat larm utlöstes. Loggning utan regler, notifiering och ansvar ger inte tillräcklig incidentförmåga.
+Projektets största kvarstående risker är manuella beroenden i återställningen, avsaknaden av aktiv daglig sårbarhetsskanning, långlivad Kubernetes-autentisering, nio tidsbegränsade sårbarhetsundantag och otillräckligt testad larmförmåga. Red Team-loggarna kom från en separat Acme-målmiljö, men gav en viktig generell lärdom: fyra av sex attacksteg var fullt synliga och två delvis synliga, samtidigt som inget observerat larm utlöstes. Loggning utan regler, notifiering och ansvar ger inte tillräcklig incidentförmåga.
 
 Jag rekommenderar följande prioritering:
 
