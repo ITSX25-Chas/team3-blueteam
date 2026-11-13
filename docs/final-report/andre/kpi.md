@@ -42,8 +42,8 @@ KPI:n visar både driftsäkerhet och säkerhetsdisciplin. En grön körning är 
 | Definition | Antal öppna Critical-fynd plus antal High/Critical-undantag vars slutdatum har passerat. Aktiva undantag redovisas separat. |
 | Formel | `öppna Critical + utgångna undantag` |
 | Datakälla | Trivy, CycloneDX-SBOM, signerad Cosign-attestering, scannerloggar och `trivyignore.yaml`. |
-| Frekvens | Vid varje imagebygge och dagligen mot den körande imagen. Formell omprövning minst veckovis när undantag närmar sig slutdatum. |
-| Nuläge | **0 Critical**, **0 utgångna undantag** och **9 aktiva CVE-undantag**. Undantagen gäller till 20 november 2026. Senaste dokumenterade skanning gav 44 High-paketträffar. |
+| Frekvens | Avsikten är skanning vid imagebygge och dagligen mot den körande imagen. Den dagliga körningen är tillfälligt bruten efter miljöbytet. Formell omprövning ska ske minst veckovis när undantag närmar sig slutdatum. |
+| Nuläge | Senaste verifierade skanning den 3 november gav **0 Critical**, 44 High-paketträffar och **9 tidsbegränsade CVE-undantag** till 20 november 2026. Vid kontroll den 13 november saknades `security-tools`, scanner-CronJobben och Discord-secreten i det nya klustret. Automatisk daglig skanning pågår därför inte. |
 | Mål | 0 Critical, 0 utgångna undantag och 100 % av aktiva undantag med motivering, ägare och slutdatum. |
 | Ansvar | Säkerhetsansvarig bedömer risken; applikationsansvarig uppdaterar image eller beroende. |
 | Åtgärd vid avvikelse | Blockera eller återställ deployment, triagera fyndet och besluta om åtgärd eller en ny dokumenterad och tidsbegränsad riskacceptans. |
@@ -51,7 +51,7 @@ KPI:n visar både driftsäkerhet och säkerhetsdisciplin. En grön körning är 
 
 ### Min bedömning
 
-Ett undantag betyder inte att sårbarheten är borta. Det betyder att en känd risk accepteras under en begränsad tid. Ledningen behöver därför se både utgångna och fortfarande aktiva undantag. Enbart siffran `0 Critical` skulle ge en för positiv bild.
+Ett undantag betyder inte att sårbarheten är borta. Det betyder att en känd risk accepteras under en begränsad tid. Ledningen behöver därför se både utgångna och fortfarande aktiva undantag. Enbart siffran `0 Critical` skulle ge en för positiv bild. KPI:n kan inte betraktas som aktuell igen förrän CronJobben har återställts och en ny skanning har verifierats.
 
 ## KPI 3 – Testad larmtäckning i Red Team-målmiljön
 
